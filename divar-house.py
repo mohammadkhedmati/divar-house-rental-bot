@@ -69,7 +69,7 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
                 rent : {rent.text.strip()}
                 link : {href.text.strip()}
                 """
-                
+
                 if href not in seen_items:
                     await context.bot.send_message(chat_id=chat_id, text=user_response)
                     seen_items.add(href)
@@ -90,8 +90,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Schedule the job to run every 15 minutes and pass the chat ID as data
     context.job_queue.run_repeating(
         check_new_items,
-        interval=10,  # Interval in seconds (15 minutes)
-        first=0,
+        interval=900,  # Interval in seconds (15 minutes)
+        first=10,
         data=chat_id
     )
 
