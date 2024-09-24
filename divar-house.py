@@ -61,9 +61,10 @@ async def ask_rent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Schedule the job to check for new items based on user-provided deposit and rent
     context.job_queue.run_repeating(
         check_new_items,
-        interval=10,  # Interval in seconds (15 minutes)
+        interval=900,  # Interval in seconds (15 minutes)
         first=0,
-        data=chat_id
+        data=chat_id,
+        
     )
     
     return ConversationHandler.END
