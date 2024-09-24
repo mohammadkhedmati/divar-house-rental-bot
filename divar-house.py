@@ -43,7 +43,6 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
 
     # Find the relevant container (adjust selectors based on Divar's HTML structure)
     container = soup.find('div', class_='post-list__items-container-e44b2')
-
     if container:
         items = container.find_all('div', class_='post-list__widget-col-c1444')
 
@@ -62,14 +61,13 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
                 prices = info.find_all('div', class_='kt-post-card__description')
                 deposit = prices[0]
                 rent = prices[0]
-
+                print(title.text)
                 user_response = f"""
-                title : {title.text}
-                deposit : {deposit.text} 
-                rent : {rent.text}
-                link : {href.text}
+                title : {title}
+                deposit : {deposit} 
+                rent : {rent}
+                link : {href}
                 """
-
                 if href not in seen_items:
                     await context.bot.send_message(chat_id=chat_id, text=user_response)
                     seen_items.add(href)
