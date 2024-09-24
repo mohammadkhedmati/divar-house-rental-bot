@@ -61,9 +61,9 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
                 prices = info.find_all('div', class_='kt-post-card__description')
                 deposit = prices[0]
                 rent = prices[0]
-                print(title.text)
+                print(title.text.stirp())
                 user_response = f"""
-                title : {title}
+                title : {title.text.stirp()}
                 deposit : {deposit} 
                 rent : {rent}
                 link : {href}
