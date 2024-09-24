@@ -57,19 +57,23 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
                 href = 'divar.ir' + href
 
                 info = link.find('div', class_='kt-post-card__info')
-                title = info.find('h2', class_='kt-post-card__title').text.strip()
-                prices = info.find_all('div', class_='kt-post-card__description').text.strip()
-                deposit = prices[0].text.strip()
-                rent = prices[0].text.strip()
+                title = info.find('h2', class_='kt-post-card__title')
+                prices = info.find_all('div', class_='kt-post-card__description')
+                deposit = prices[0]
+                rent = prices[1]
+                image = link.find('img', src=True)
+                # Extract image URL (adjust selector based on Divar's HTML structure)
+                image_url = image['data-src']
 
-                user_response = f"""
-                title : {title.text.stirp()}
-                deposit : {deposit} 
-                rent : {rent}
-                link : {href}
-                """
+                user_response = "\n".join([
+                    f"title: {title.text.strip()}",
+                    f"deposit: {deposit.text.strip()}",
+                    f"rent: {rent.text.strip()}",
+                    f"link: {href}"
+                ])
+
                 if href not in seen_items:
-                    await context.bot.send_message(chat_id=chat_id, text=user_response)
+                    await context.bot.send_photo(chat_id=chat_id, photo=image_url, caption=user_response)
                     seen_items.add(href)
                     logging.info(f"New link found and sent to chat {chat_id}: {href}")
                 else:
