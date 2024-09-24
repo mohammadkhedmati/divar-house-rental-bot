@@ -78,7 +78,7 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
     rent = chat_data[chat_id].get('rent')
 
     # Build URL based on deposit and rent values
-    url = BASE_URL + f"?rent=-{rent * 1000000}&has-photo=true&credit=-{deposit * 1000000}&building-age=-10&districts=139%2C138"
+    url = BASE_URL + f"shahrak-jandarmeri?rent=-{rent * 1000000}&has-photo=true&credit=-{deposit * 1000000}&building-age=-10&districts=139%2C138"
     
     try:
         response = requests.get(url)
@@ -95,7 +95,7 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
 
         if not items:
             logging.warning("No items found in the container.")
-        
+            
         seen_items = chat_data.get(chat_id, {}).get('seen_items', set())
 
         for item in items:
