@@ -52,10 +52,24 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
         for item in items:
             link = item.find('a', href=True)
             if link:
+                # item link
                 href = link['href']
                 href = 'divar.ir' + href
+
+                info = link.find('div', class_='kt-post-card__info')
+                title = info.find('h2', class_='kt-post-card__title')
+                prices = info.find_all('div', class_='kt-post-card__description')
+                deposit = prices[0]
+                rent = prices[0]
+
+                user_response = f"""
+                title : {title}
+                deposit : {deposit} 
+                rent : {rent}
+                link : {href}
+                """
                 if href not in seen_items:
-                    await context.bot.send_message(chat_id=chat_id, text=href)
+                    await context.bot.send_message(chat_id=chat_id, text=user_response)
                     seen_items.add(href)
                     logging.info(f"New link found and sent to chat {chat_id}: {href}")
                 else:
