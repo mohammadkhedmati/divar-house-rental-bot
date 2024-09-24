@@ -1,6 +1,6 @@
 # docker file for divar rental
 
-FROM python:3.11-slim-buster
+FROM python:3.11
 
 WORKDIR /app
 
