@@ -64,10 +64,10 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
                 rent = prices[0]
 
                 user_response = f"""
-                title : {title.text.strip()}
-                deposit : {deposit.text.strip()} 
-                rent : {rent.text.strip()}
-                link : {href.text.strip()}
+                title : {title.text}
+                deposit : {deposit.text} 
+                rent : {rent.text}
+                link : {href.text}
                 """
 
                 if href not in seen_items:
