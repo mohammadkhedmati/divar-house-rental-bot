@@ -16,15 +16,21 @@ TELEGRAM_TOKEN = ''
 # URL to scrape
 URL = "https://divar.ir/s/tehran/rent-apartment/shahrak-jandarmeri?rent=-30000000&has-photo=true&credit=-400000000&building-age=-10&districts=139"
 
-# To keep track of the items already seen
-seen_items = set()
+# Dictionary to store chat IDs and their seen items sets
+chat_data = {}
 
 
 async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
-    global seen_items
+    global chat_data
+
     chat_id = context.job.data  # Access chat ID from data
 
-    logging.info("Checking for new items...")
+    if chat_id not in chat_data:
+        chat_data[chat_id] = set()  # Initialize seen items for this chat
+
+    seen_items = chat_data[chat_id]  # Get seen items for this chat
+
+    logging.info("Checking for new items for chat %d...", chat_id)
 
     try:
         response = requests.get(URL)
@@ -51,9 +57,9 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
                 if href not in seen_items:
                     await context.bot.send_message(chat_id=chat_id, text=href)
                     seen_items.add(href)
-                    logging.info(f"New link found and sent: {href}")
+                    logging.info(f"New link found and sent to chat {chat_id}: {href}")
                 else:
-                    logging.info(f"Link already seen: {href}")
+                    logging.info(f"Link already seen for chat {chat_id}: {href}")
     else:
         logging.warning("No relevant container found.")
 
@@ -61,15 +67,19 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Bot started! I will check for new items every 15 minutes.")
 
+    # Add user's chat ID and initialize seen items set
+    chat_id = update.message.chat.id
+    chat_data[chat_id] = set()
+
     # Schedule the job to run every 15 minutes and pass the chat ID as data
     context.job_queue.run_repeating(
         check_new_items,
         interval=900,  # Interval in seconds (15 minutes)
         first=0,
-        data=update.message.chat.id
+        data=chat_id
     )
 
-    logging.info("Job scheduled to check for new items every 15 minutes.")
+    logging.info(f"Job scheduled for chat {chat_id} to check for new items every 15 minutes.")
 
 
 def main():
