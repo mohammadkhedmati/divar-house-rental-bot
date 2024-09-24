@@ -90,8 +90,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Schedule the job to run every 15 minutes and pass the chat ID as data
     context.job_queue.run_repeating(
         check_new_items,
-        interval=900,  # Interval in seconds (15 minutes)
-        first=10,
+        interval=10,  # Interval in seconds (15 minutes)
+        first=0,
         data=chat_id
     )
 
