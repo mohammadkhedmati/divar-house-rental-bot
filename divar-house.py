@@ -57,11 +57,11 @@ async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
                 href = 'divar.ir' + href
 
                 info = link.find('div', class_='kt-post-card__info')
-                title = info.find('h2', class_='kt-post-card__title')
-                prices = info.find_all('div', class_='kt-post-card__description')
-                deposit = prices[0]
-                rent = prices[0]
-                print(title.text.stirp())
+                title = info.find('h2', class_='kt-post-card__title').text.strip()
+                prices = info.find_all('div', class_='kt-post-card__description').text.strip()
+                deposit = prices[0].text.strip()
+                rent = prices[0].text.strip()
+
                 user_response = f"""
                 title : {title.text.stirp()}
                 deposit : {deposit} 
