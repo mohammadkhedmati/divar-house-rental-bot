@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
 import requests
 from bs4 import BeautifulSoup
@@ -24,7 +24,11 @@ BASE_URL = "https://divar.ir/s/tehran/rent-apartment/"
 chat_data = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome! Please choose one: خرید (buy) or اجاره (rent)")
+    reply_keyboard = [["خرید", "اجاره"]]
+    await update.message.reply_text(
+        "Welcome! Please choose one:",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    )
     return ASK_TYPE
 
 async def ask_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,14 +36,24 @@ async def ask_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip().lower()
     if text in ["اجاره", "rent"]:
         chat_data[chat_id] = {'type': 'rent'}
-        await update.message.reply_text("Let's start by entering your desired deposit amount (in millions). e.g: 400,000,000 = 400")
+        await update.message.reply_text(
+            "Let's start by entering your desired deposit amount (in millions). e.g: 400,000,000 = 400",
+            reply_markup=ReplyKeyboardRemove()
+        )
         return ASK_DEPOSIT
     elif text in ["خرید", "buy"]:
         chat_data[chat_id] = {'type': 'buy'}
-        await update.message.reply_text("Let's start by entering your desired price (in millions). e.g: 5,000,000,000 = 5000")
+        await update.message.reply_text(
+            "Let's start by entering your desired price (in millions). e.g: 5,000,000,000 = 5000",
+            reply_markup=ReplyKeyboardRemove()
+        )
         return ASK_DEPOSIT
     else:
-        await update.message.reply_text("Please reply with 'خرید' (buy) or 'اجاره' (rent).")
+        reply_keyboard = [["خرید", "اجاره"]]
+        await update.message.reply_text(
+            "Please reply with 'خرید' (buy) or 'اجاره' (rent).",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
         return ASK_TYPE
 
 
@@ -81,7 +95,11 @@ async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Great! Now, enter your desired rent amount (in millions). e.g: 30,000,000 = 30")
         return ASK_RENT
     else:
-        await update.message.reply_text("Do you want a balcony? (yes/no) (or type 'skip')")
+        reply_keyboard = [["بله", "خیر", "بیخیال"]]
+        await update.message.reply_text(
+            "آیا بالکن می‌خواهید؟",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
         return ASK_BALCONY
 
 async def ask_rent(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -97,38 +115,54 @@ async def ask_rent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Store the rent in chat_data
     chat_data[chat_id]['rent'] = rent_value
 
-    # Ask for balcony
-    await update.message.reply_text("Do you want a balcony? (yes/no) (or type 'skip')")
+    # Ask for balcony with buttons
+    reply_keyboard = [["بله", "خیر", "بیخیال"]]
+    await update.message.reply_text(
+        "آیا بالکن می‌خواهید؟",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    )
     return ASK_BALCONY
 
 async def ask_balcony(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     text = update.message.text.strip().lower()
-    if text in ["skip", "", "رد", "بیخیال"]:
-        chat_data[chat_id]['balcony'] = False  # skip means no
+    if text in ["بیخیال", "skip", "رد", "نه", "خیر", "no", ""]:
+        chat_data[chat_id]['balcony'] = False
     else:
-        chat_data[chat_id]['balcony'] = text in ["yes", "y", "بله", "آره"]
-    await update.message.reply_text("Do you want parking? (yes/no) (or type 'skip')")
+        chat_data[chat_id]['balcony'] = True
+    reply_keyboard = [["بله", "خیر", "بیخیال"]]
+    await update.message.reply_text(
+        "آیا پارکینگ می‌خواهید؟",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    )
     return ASK_PARKING
 
 async def ask_parking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     text = update.message.text.strip().lower()
-    if text in ["skip", "", "رد", "بیخیال"]:
-        chat_data[chat_id]['parking'] = False  # skip means no
+    if text in ["بیخیال", "skip", "رد", "نه", "خیر", "no", ""]:
+        chat_data[chat_id]['parking'] = False
     else:
-        chat_data[chat_id]['parking'] = text in ["yes", "y", "بله", "آره"]
-    await update.message.reply_text("Do you want a warehouse? (yes/no) (or type 'skip')")
+        chat_data[chat_id]['parking'] = True
+    reply_keyboard = [["بله", "خیر", "بیخیال"]]
+    await update.message.reply_text(
+        "آیا انباری می‌خواهید؟",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    )
     return ASK_WAREHOUSE
 
 async def ask_warehouse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     text = update.message.text.strip().lower()
-    if text in ["skip", "", "رد", "بیخیال"]:
-        chat_data[chat_id]['warehouse'] = False  # skip means no
+    if text in ["بیخیال", "skip", "رد", "نه", "خیر", "no", ""]:
+        chat_data[chat_id]['warehouse'] = False
     else:
-        chat_data[chat_id]['warehouse'] = text in ["yes", "y", "بله", "آره"]
-    await update.message.reply_text("How many rooms? (e.g. یک, دو, سه, بدون اتاق, چهار, بیشتر or comma separated) (or type 'skip')")
+        chat_data[chat_id]['warehouse'] = True
+    reply_keyboard = [["یک", "دو", "سه"], ["چهار", "چهار و بیشتر", "بدون اتاق"], ["بیخیال"]]
+    await update.message.reply_text(
+        "چند اتاق می‌خواهید؟",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    )
     return ASK_ROOMS
 
 async def ask_rooms(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -138,7 +172,11 @@ async def ask_rooms(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data[chat_id]['rooms'] = None  # skip means do not include
     else:
         chat_data[chat_id]['rooms'] = rooms
-    await update.message.reply_text("Enter size range (e.g. 30-100) (or type 'skip')")
+    reply_keyboard = [["بیخیال"]]
+    await update.message.reply_text(
+        "بازه متراژ را وارد کنید (مثلاً 30-100 یا بیخیال)",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    )
     return ASK_SIZE
 
 async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
