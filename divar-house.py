@@ -1,3 +1,4 @@
+
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
 import requests
@@ -12,7 +13,7 @@ logging.basicConfig(
 )
 
 # States for conversation
-ASK_TYPE, ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(8)
+ASK_TYPE, ASK_REGION, ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(9)
 
 # Your Telegram bot token and user ID
 TELEGRAM_TOKEN = '8199181120:AAFSAZd7IceqKA64dNWTgXdWGHgm83oxldU'
@@ -36,26 +37,45 @@ async def ask_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip().lower()
     if text in ["اجاره", "rent"]:
         chat_data[chat_id] = {'type': 'rent'}
+        reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"]]
+        await update.message.reply_text(
+            "کدام منطقه تهران را انتخاب می‌کنید؟",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_REGION
+    elif text in ["خرید", "buy"]:
+        chat_data[chat_id] = {'type': 'buy'}
+        reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"]]
+        await update.message.reply_text(
+            "کدام منطقه تهران را انتخاب می‌کنید؟",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_REGION
+
+async def ask_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    region = update.message.text.strip()
+    if region not in ["۱", "2", "۲", "3", "۳", "5", "۵", "6", "۶"]:
+        reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"]]
+        await update.message.reply_text(
+            "لطفاً فقط یکی از مناطق ۱، ۲، ۳، ۵ یا ۶ را انتخاب کنید.",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_REGION
+    # Normalize region to English digits for later use
+    region_map = {"۱": "1", "۲": "2", "۳": "3", "۵": "5", "۶": "6", "1": "1", "2": "2", "3": "3", "5": "5", "6": "6"}
+    chat_data[chat_id]['region'] = region_map.get(region, region)
+    if chat_data[chat_id]['type'] == 'rent':
         await update.message.reply_text(
             "لطفاً مبلغ ودیعه مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۴۰۰ برای ۴۰۰,۰۰۰,۰۰۰)",
             reply_markup=ReplyKeyboardRemove()
         )
         return ASK_DEPOSIT
-    elif text in ["خرید", "buy"]:
-        chat_data[chat_id] = {'type': 'buy'}
-        await update.message.reply_text(
-            "لطفاً قیمت مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۵۰۰۰ برای ۵,۰۰۰,۰۰۰,۰۰۰)",
-            reply_markup=ReplyKeyboardRemove()
-        )
-        return ASK_DEPOSIT
-    else:
-        reply_keyboard = [["خرید", "اجاره"]]
-        await update.message.reply_text(
-            "لطفاً فقط یکی از گزینه‌های 'خرید' یا 'اجاره' را انتخاب کنید.",
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-        )
-        return ASK_TYPE
-
+    await update.message.reply_text(
+        "لطفاً قیمت مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۵۰۰۰ برای ۵,۰۰۰,۰۰۰,۰۰۰)",
+        reply_markup=ReplyKeyboardRemove()
+    )
+    return ASK_DEPOSIT
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
@@ -221,16 +241,39 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
     deposit = chat_data[chat_id].get('deposit')
     rent = chat_data[chat_id].get('rent')
     search_type = chat_data[chat_id].get('type', 'rent')
+    region = chat_data[chat_id].get('region')
     balcony = chat_data[chat_id].get('balcony', None)
     parking = chat_data[chat_id].get('parking', None)
     warehouse = chat_data[chat_id].get('warehouse', None)
     rooms = chat_data[chat_id].get('rooms', None)
     size = chat_data[chat_id].get('size', None)
     import urllib.parse
-    if search_type == 'buy':
-        url = f"https://divar.ir/s/tehran/buy-residential?price=-{deposit * 1000000}&has-photo=true"
+    # Region-specific URLs
+    region_urls = {
+        "1": "https://divar.ir/s/tehran/real-estate/ajudaniye?bbox=51.4250908%2C35.7677879%2C51.5086746%2C35.8264694&districts=4183%2C42%2C43%2C44%2C45%2C47%2C48%2C49%2C50%2C51%2C52%2C53%2C54%2C55%2C56%2C57%2C58%2C60%2C61%2C62%2C63%2C64%2C65%2C66%2C85%2C910%2C930%2C931%2C942",
+        "2": "https://divar.ir/s/tehran/rent-residential/shahrak-jandarmeri?districts=139%2C171%2C172%2C200%2C201%2C202%2C203%2C205%2C4141%2C4142%2C4160%2C4161%2C4162%2C4163%2C4170%2C4330%2C4331%2C58%2C59%2C656%2C75%2C78%2C82%2C88%2C921%2C922%2C923%2C924%2C925%2C926%2C927%2C928%2C929",
+        "3": "https://divar.ir/s/tehran/rent-residential/tehran-jolfa?&districts=1035%2C315%2C360%2C4171%2C4172%2C68%2C70%2C71%2C72%2C74%2C81%2C84%2C86%2C87%2C940%2C941",
+        "5": "https://divar.ir/s/tehran/rent-residential/shahrak-koohsar?districts=141%2C143%2C145%2C146%2C147%2C148%2C151%2C152%2C153%2C154%2C155%2C156%2C157%2C158%2C159%2C160%2C167%2C168%2C169%2C170%2C173%2C174%2C4133%2C4166%2C4311%2C4312%2C82%2C919%2C920%2C921",
+        "6": "https://divar.ir/s/tehran/rent-villa/keshavarz-boulevard?districts=210%2C211%2C297%2C298%2C299%2C301%2C655%2C658%2C90%2C91%2C932%2C933%2C934%2C935%2C936%2C96"
+    }
+    if region in region_urls:
+        url = region_urls[region]
+        # Add price/rent filters if available
+        params = []
+        if search_type == 'buy' and deposit:
+            params.append(f"price=-{deposit * 1000000}")
+        elif search_type == 'rent' and deposit:
+            params.append(f"credit=-{deposit * 1000000}")
+        if search_type == 'rent' and rent:
+            params.append(f"rent=-{rent * 1000000}")
+        if params:
+            url += ('&' if '?' in url else '?') + '&'.join(params)
+        url += "&has-photo=true"
     else:
-        url = f"https://divar.ir/s/tehran/rent-residential?credit=-{deposit * 1000000}&has-photo=true&rent=-{rent * 1000000}"
+        if search_type == 'buy':
+            url = f"https://divar.ir/s/tehran/buy-residential?price=-{deposit * 1000000}&has-photo=true"
+        else:
+            url = f"https://divar.ir/s/tehran/rent-residential?credit=-{deposit * 1000000}&has-photo=true&rent=-{rent * 1000000}"
     if rooms:
         rooms_encoded = urllib.parse.quote(rooms)
         url += f"&rooms={rooms_encoded}"
@@ -381,6 +424,7 @@ def main():
         entry_points=[CommandHandler("start", start), CommandHandler("newprocess", newprocess)],
         states={
             ASK_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_type)],
+            ASK_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_region)],
             ASK_DEPOSIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_deposit)],
             ASK_RENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_rent)],
             ASK_BALCONY: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_balcony)],
