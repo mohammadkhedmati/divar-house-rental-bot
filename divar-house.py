@@ -249,54 +249,85 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
             new_seen.add(href)
             title = item.get("name", "")
             image = item.get("image", "")
-
-            # Fetch details from the item's page with up to 3 retries
-            deposit_text = ""
-            rent_text = ""
-            for attempt in range(3):
-                try:
-                    headers_detail = headers.copy()
-                    headers_detail["User-Agent"] = random.choice(user_agents)
-                    detail_response = requests.get(href, headers=headers_detail)
-                    detail_response.raise_for_status()
-                    detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
-                    # Try to find deposit and rent in the detail page
-                    deposit_tag = detail_soup.find("div", string=lambda s: s and ("ودیعه" in s or "رهن" in s))
-                    rent_tag = detail_soup.find("div", string=lambda s: s and ("اجاره" in s))
-                    logging.info(f"Deposit tag: {deposit_tag}, Rent tag: {rent_tag}")
-                    if deposit_tag:
-                        next_div = deposit_tag.find_next("div")
-                        deposit_text = next_div.text.strip() if next_div and next_div.text else ""
-                    else:
+            if search_type == 'buy':
+                # Try to get total price and price per meter
+                total_price = item.get("price", "N/A")
+                price_per_meter = item.get("price_per_meter", "N/A")
+                # If not in item, try to fetch from detail page
+                if total_price == "N/A" or price_per_meter == "N/A":
+                    for attempt in range(3):
                         try:
-                            root = html.fromstring(detail_response.text)
-                            nodes = root.xpath('/html/body/div[1]/div[1]/div/main/article/div/div[1]/section[1]/div[5]/div[2]/div[2]/p')
-                            deposit_text = nodes[0].text_content().strip()
-                        except Exception:
-                            deposit_text = rent_tag.text.strip() if rent_tag and rent_tag.text else ""
-                    if rent_tag:
-                        next_div = rent_tag.find_next("div")
-                        rent_text = next_div.text.strip() if next_div and next_div.text else ""
-                    else:
-                        try:
-                            root = html.fromstring(detail_response.text)
-                            nodes = root.xpath('/html/body/div[1]/div[1]/div/main/article/div/div[1]/section[1]/div[5]/div[3]/div[1]/p')
-                            deposit_text = nodes[0].text_content().strip()
-                        except Exception:
-                            deposit_text = rent_tag.text.strip() if rent_tag and rent_tag.text else ""
-                    break  # Success, exit retry loop
-                except Exception as e:
-                    logging.error(f"Attempt {attempt+1}: Error fetching details for {href}: {e}")
-                    if attempt == 2:
-                        deposit_text = "N/A"
-                        rent_text = "N/A"
-
-            user_response = "\n".join([
-                f"عنوان: {title}",
-                f"ودیعه: {deposit_text}",
-                f"اجاره: {rent_text}",
-                f"لینک: {href}"
-            ])
+                            headers_detail = headers.copy()
+                            headers_detail["User-Agent"] = random.choice(user_agents)
+                            detail_response = requests.get(href, headers=headers_detail)
+                            detail_response.raise_for_status()
+                            detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
+                            # Try to find price and price per meter
+                            price_tag = detail_soup.find(string=lambda s: s and ("قیمت کل" in s))
+                            price_meter_tag = detail_soup.find(string=lambda s: s and ("قیمت هر متر" in s))
+                            if price_tag:
+                                total_price = price_tag.find_next("div").text.strip()
+                            if price_meter_tag:
+                                price_per_meter = price_meter_tag.find_next("div").text.strip()
+                            break
+                        except Exception as e:
+                            logging.error(f"Attempt {attempt+1}: Error fetching buy details for {href}: {e}")
+                            if attempt == 2:
+                                total_price = total_price or "N/A"
+                                price_per_meter = price_per_meter or "N/A"
+                user_response = "\n".join([
+                    f"عنوان: {title}",
+                    f"قیمت کل: {total_price}",
+                    f"قیمت هر متر: {price_per_meter}",
+                    f"لینک: {href}"
+                ])
+            else:
+                # Fetch details from the item's page with up to 3 retries
+                deposit_text = ""
+                rent_text = ""
+                for attempt in range(3):
+                    try:
+                        headers_detail = headers.copy()
+                        headers_detail["User-Agent"] = random.choice(user_agents)
+                        detail_response = requests.get(href, headers=headers_detail)
+                        detail_response.raise_for_status()
+                        detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
+                        # Try to find deposit and rent in the detail page
+                        deposit_tag = detail_soup.find("div", string=lambda s: s and ("ودیعه" in s or "رهن" in s))
+                        rent_tag = detail_soup.find("div", string=lambda s: s and ("اجاره" in s))
+                        logging.info(f"Deposit tag: {deposit_tag}, Rent tag: {rent_tag}")
+                        if deposit_tag:
+                            next_div = deposit_tag.find_next("div")
+                            deposit_text = next_div.text.strip() if next_div and next_div.text else ""
+                        else:
+                            try:
+                                root = html.fromstring(detail_response.text)
+                                nodes = root.xpath('/html/body/div[1]/div[1]/div/main/article/div/div[1]/section[1]/div[5]/div[2]/div[2]/p')
+                                deposit_text = nodes[0].text_content().strip()
+                            except Exception:
+                                deposit_text = rent_tag.text.strip() if rent_tag and rent_tag.text else ""
+                        if rent_tag:
+                            next_div = rent_tag.find_next("div")
+                            rent_text = next_div.text.strip() if next_div and next_div.text else ""
+                        else:
+                            try:
+                                root = html.fromstring(detail_response.text)
+                                nodes = root.xpath('/html/body/div[1]/div[1]/div/main/article/div/div[1]/section[1]/div[5]/div[3]/div[1]/p')
+                                deposit_text = nodes[0].text_content().strip()
+                            except Exception:
+                                deposit_text = rent_tag.text.strip() if rent_tag and rent_tag.text else ""
+                        break  # Success, exit retry loop
+                    except Exception as e:
+                        logging.error(f"Attempt {attempt+1}: Error fetching details for {href}: {e}")
+                        if attempt == 2:
+                            deposit_text = "N/A"
+                            rent_text = "N/A"
+                user_response = "\n".join([
+                    f"عنوان: {title}",
+                    f"ودیعه: {deposit_text}",
+                    f"اجاره: {rent_text}",
+                    f"لینک: {href}"
+                ])
             await context.bot.send_photo(chat_id=chat_id, photo=image, caption=user_response)
     chat_data[chat_id]['seen_items'] = new_seen
 
