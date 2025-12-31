@@ -141,8 +141,8 @@ async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
         job.schedule_removal()
     context.job_queue.run_repeating(
         check_new_items,
-        interval=60,  # 1 minute
-        first=60,
+        interval=30 * 60,  # 30 minutes
+        first=30 * 60,
         data=chat_id,
         name=str(chat_id)
     )
