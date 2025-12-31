@@ -26,7 +26,7 @@ chat_data = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_keyboard = [["خرید", "اجاره"]]
     await update.message.reply_text(
-        "Welcome! Please choose one:",
+        "سلام! لطفاً یکی را انتخاب کنید:",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     )
     return ASK_TYPE
@@ -37,21 +37,21 @@ async def ask_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text in ["اجاره", "rent"]:
         chat_data[chat_id] = {'type': 'rent'}
         await update.message.reply_text(
-            "Let's start by entering your desired deposit amount (in millions). e.g: 400,000,000 = 400",
+            "لطفاً مبلغ ودیعه مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۴۰۰ برای ۴۰۰,۰۰۰,۰۰۰)",
             reply_markup=ReplyKeyboardRemove()
         )
         return ASK_DEPOSIT
     elif text in ["خرید", "buy"]:
         chat_data[chat_id] = {'type': 'buy'}
         await update.message.reply_text(
-            "Let's start by entering your desired price (in millions). e.g: 5,000,000,000 = 5000",
+            "لطفاً قیمت مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۵۰۰۰ برای ۵,۰۰۰,۰۰۰,۰۰۰)",
             reply_markup=ReplyKeyboardRemove()
         )
         return ASK_DEPOSIT
     else:
         reply_keyboard = [["خرید", "اجاره"]]
         await update.message.reply_text(
-            "Please reply with 'خرید' (buy) or 'اجاره' (rent).",
+            "لطفاً فقط یکی از گزینه‌های 'خرید' یا 'اجاره' را انتخاب کنید.",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return ASK_TYPE
@@ -63,7 +63,7 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     jobs = context.job_queue.get_jobs_by_name(str(chat_id))
     for job in jobs:
         job.schedule_removal()
-    await update.message.reply_text("Stopped apartment search notifications.")
+    await update.message.reply_text("اعلان‌های جستجوی آپارتمان متوقف شد.")
 
 
 async def newprocess(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -74,7 +74,11 @@ async def newprocess(update: Update, context: ContextTypes.DEFAULT_TYPE):
         job.schedule_removal()
     # Clear previous deposit/rent
     chat_data.pop(chat_id, None)
-    await update.message.reply_text("Starting new process. Please choose one: خرید (buy) or اجاره (rent)")
+    reply_keyboard = [["خرید", "اجاره"]]
+    await update.message.reply_text(
+        "فرآیند جدید آغاز شد. لطفاً یکی را انتخاب کنید:",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    )
     return ASK_TYPE
 
 async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -84,7 +88,7 @@ async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         deposit_value = int(deposit)
     except ValueError:
-        await update.message.reply_text("Invalid deposit amount. Please enter a valid number.")
+        await update.message.reply_text("مبلغ ودیعه نامعتبر است. لطفاً یک عدد صحیح وارد کنید.")
         return ASK_DEPOSIT
 
     # Store the deposit/price in chat_data
@@ -92,7 +96,7 @@ async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # If type is rent, ask for rent, else go to next step
     if chat_data[chat_id].get('type') == 'rent':
-        await update.message.reply_text("Great! Now, enter your desired rent amount (in millions). e.g: 30,000,000 = 30")
+        await update.message.reply_text("عالی! حالا مبلغ اجاره مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۳۰ برای ۳۰,۰۰۰,۰۰۰)")
         return ASK_RENT
     else:
         reply_keyboard = [["بله", "خیر", "بیخیال"]]
@@ -109,7 +113,7 @@ async def ask_rent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         rent_value = int(rent)
     except ValueError:
-        await update.message.reply_text("Invalid rent amount. Please enter a valid number.")
+        await update.message.reply_text("مبلغ اجاره نامعتبر است. لطفاً یک عدد صحیح وارد کنید.")
         return ASK_RENT
 
     # Store the rent in chat_data
@@ -174,7 +178,7 @@ async def ask_rooms(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data[chat_id]['rooms'] = rooms
     reply_keyboard = [["بیخیال"]]
     await update.message.reply_text(
-        "بازه متراژ را وارد کنید (مثلاً 30-100 یا بیخیال)",
+        "لطفاً بازه متراژ را وارد کنید (مثلاً ۳۰-۱۰۰ یا بیخیال)",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     )
     return ASK_SIZE
@@ -187,7 +191,7 @@ async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         chat_data[chat_id]['size'] = size
 
-    await update.message.reply_text("Searching for apartments... I will check for new items every 15 minutes.")
+    await update.message.reply_text("در حال جستجوی آپارتمان‌ها... هر ۳۰ دقیقه موارد جدید را بررسی می‌کنم.")
 
     # Fetch and send all current items immediately
     await fetch_and_send_items(chat_id, context, send_all=True)
