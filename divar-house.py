@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 
 # States for conversation
-ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(7)
+ASK_TYPE, ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(8)
 
 # Your Telegram bot token and user ID
 TELEGRAM_TOKEN = '8199181120:AAFSAZd7IceqKA64dNWTgXdWGHgm83oxldU'
@@ -24,8 +24,23 @@ BASE_URL = "https://divar.ir/s/tehran/rent-apartment/"
 chat_data = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome! Let's start by entering your desired deposit amount (in millions). e.g: 400,000,000 = 400")
-    return ASK_DEPOSIT
+    await update.message.reply_text("Welcome! Please choose one: خرید (buy) or اجاره (rent)")
+    return ASK_TYPE
+
+async def ask_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    text = update.message.text.strip().lower()
+    if text in ["اجاره", "rent"]:
+        chat_data[chat_id] = {'type': 'rent'}
+        await update.message.reply_text("Let's start by entering your desired deposit amount (in millions). e.g: 400,000,000 = 400")
+        return ASK_DEPOSIT
+    elif text in ["خرید", "buy"]:
+        chat_data[chat_id] = {'type': 'buy'}
+        await update.message.reply_text("Let's start by entering your desired price (in millions). e.g: 5,000,000,000 = 5000")
+        return ASK_DEPOSIT
+    else:
+        await update.message.reply_text("Please reply with 'خرید' (buy) or 'اجاره' (rent).")
+        return ASK_TYPE
 
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -45,8 +60,8 @@ async def newprocess(update: Update, context: ContextTypes.DEFAULT_TYPE):
         job.schedule_removal()
     # Clear previous deposit/rent
     chat_data.pop(chat_id, None)
-    await update.message.reply_text("Starting new process. Please enter your desired deposit amount (in millions). e.g: 400,000,000 = 400")
-    return ASK_DEPOSIT
+    await update.message.reply_text("Starting new process. Please choose one: خرید (buy) or اجاره (rent)")
+    return ASK_TYPE
 
 async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     deposit = update.message.text
@@ -58,12 +73,16 @@ async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Invalid deposit amount. Please enter a valid number.")
         return ASK_DEPOSIT
 
-    # Store the deposit in chat_data
-    chat_data[chat_id] = {'deposit': deposit_value}
+    # Store the deposit/price in chat_data
+    chat_data[chat_id]['deposit'] = deposit_value
 
-    # Ask for rent after deposit is provided
-    await update.message.reply_text("Great! Now, enter your desired rent amount (in millions). e.g: 30,000,000 = 30")
-    return ASK_RENT
+    # If type is rent, ask for rent, else go to next step
+    if chat_data[chat_id].get('type') == 'rent':
+        await update.message.reply_text("Great! Now, enter your desired rent amount (in millions). e.g: 30,000,000 = 30")
+        return ASK_RENT
+    else:
+        await update.message.reply_text("Do you want a balcony? (yes/no) (or type 'skip')")
+        return ASK_BALCONY
 
 async def ask_rent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rent = update.message.text
@@ -159,13 +178,17 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
 
     deposit = chat_data[chat_id].get('deposit')
     rent = chat_data[chat_id].get('rent')
+    search_type = chat_data[chat_id].get('type', 'rent')
     balcony = chat_data[chat_id].get('balcony', None)
     parking = chat_data[chat_id].get('parking', None)
     warehouse = chat_data[chat_id].get('warehouse', None)
     rooms = chat_data[chat_id].get('rooms', None)
     size = chat_data[chat_id].get('size', None)
     import urllib.parse
-    url = f"https://divar.ir/s/tehran/rent-residential?credit=-{deposit * 1000000}&has-photo=true&rent=-{rent * 1000000}"
+    if search_type == 'buy':
+        url = f"https://divar.ir/s/tehran/buy-residential?price=-{deposit * 1000000}&has-photo=true"
+    else:
+        url = f"https://divar.ir/s/tehran/rent-residential?credit=-{deposit * 1000000}&has-photo=true&rent=-{rent * 1000000}"
     if rooms:
         rooms_encoded = urllib.parse.quote(rooms)
         url += f"&rooms={rooms_encoded}"
@@ -284,6 +307,7 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start), CommandHandler("newprocess", newprocess)],
         states={
+            ASK_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_type)],
             ASK_DEPOSIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_deposit)],
             ASK_RENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_rent)],
             ASK_BALCONY: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_balcony)],
