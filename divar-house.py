@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 
 # States for conversation
-ASK_DEPOSIT, ASK_RENT = range(2)
+ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(7)
 
 # Your Telegram bot token and user ID
 TELEGRAM_TOKEN = '8199181120:AAFSAZd7IceqKA64dNWTgXdWGHgm83oxldU'
@@ -78,20 +78,67 @@ async def ask_rent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Store the rent in chat_data
     chat_data[chat_id]['rent'] = rent_value
 
-    # Retrieve deposit value from chat_data
-    deposit = chat_data[chat_id]['deposit']
+    # Ask for balcony
+    await update.message.reply_text("Do you want a balcony? (yes/no) (or type 'skip')")
+    return ASK_BALCONY
+
+async def ask_balcony(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    text = update.message.text.strip().lower()
+    if text in ["skip", "", "رد", "بیخیال"]:
+        chat_data[chat_id]['balcony'] = False  # skip means no
+    else:
+        chat_data[chat_id]['balcony'] = text in ["yes", "y", "بله", "آره"]
+    await update.message.reply_text("Do you want parking? (yes/no) (or type 'skip')")
+    return ASK_PARKING
+
+async def ask_parking(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    text = update.message.text.strip().lower()
+    if text in ["skip", "", "رد", "بیخیال"]:
+        chat_data[chat_id]['parking'] = False  # skip means no
+    else:
+        chat_data[chat_id]['parking'] = text in ["yes", "y", "بله", "آره"]
+    await update.message.reply_text("Do you want a warehouse? (yes/no) (or type 'skip')")
+    return ASK_WAREHOUSE
+
+async def ask_warehouse(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    text = update.message.text.strip().lower()
+    if text in ["skip", "", "رد", "بیخیال"]:
+        chat_data[chat_id]['warehouse'] = False  # skip means no
+    else:
+        chat_data[chat_id]['warehouse'] = text in ["yes", "y", "بله", "آره"]
+    await update.message.reply_text("How many rooms? (e.g. یک, دو, سه, بدون اتاق, چهار, بیشتر or comma separated) (or type 'skip')")
+    return ASK_ROOMS
+
+async def ask_rooms(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    rooms = update.message.text.strip()
+    if rooms in ["skip", "", "رد", "بیخیال"]:
+        chat_data[chat_id]['rooms'] = None  # skip means do not include
+    else:
+        chat_data[chat_id]['rooms'] = rooms
+    await update.message.reply_text("Enter size range (e.g. 30-100) (or type 'skip')")
+    return ASK_SIZE
+
+async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    size = update.message.text.strip()
+    if size in ["skip", "", "رد", "بیخیال"]:
+        chat_data[chat_id]['size'] = None  # skip means do not include
+    else:
+        chat_data[chat_id]['size'] = size
 
     await update.message.reply_text("Searching for apartments... I will check for new items every 15 minutes.")
 
     # Fetch and send all current items immediately
     await fetch_and_send_items(chat_id, context, send_all=True)
 
-    # Schedule the job to check for new items based on user-provided deposit and rent
-    # Remove any previous jobs for this chat
+    # Schedule the job to check for new items based on user-provided options
     jobs = context.job_queue.get_jobs_by_name(str(chat_id))
     for job in jobs:
         job.schedule_removal()
-    # Schedule new job with chat_id as name
     context.job_queue.run_repeating(
         check_new_items,
         interval=60,  # 1 minute
@@ -112,7 +159,25 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
 
     deposit = chat_data[chat_id].get('deposit')
     rent = chat_data[chat_id].get('rent')
-    url = BASE_URL + f"shahrak-jandarmeri?rent=-{rent * 1000000}&has-photo=true&credit=-{deposit * 1000000}&building-age=-10&districts=139%2C138"
+    balcony = chat_data[chat_id].get('balcony', None)
+    parking = chat_data[chat_id].get('parking', None)
+    warehouse = chat_data[chat_id].get('warehouse', None)
+    rooms = chat_data[chat_id].get('rooms', None)
+    size = chat_data[chat_id].get('size', None)
+    import urllib.parse
+    url = f"https://divar.ir/s/tehran/rent-residential?credit=-{deposit * 1000000}&has-photo=true&rent=-{rent * 1000000}"
+    if rooms:
+        rooms_encoded = urllib.parse.quote(rooms)
+        url += f"&rooms={rooms_encoded}"
+    if size:
+        url += f"&size={size}"
+    if balcony:
+        url += "&balcony=true"
+    if parking:
+        url += "&parking=true"
+    if warehouse:
+        url += "&warehouse=true"
+    logging.info("Checking URL: %s", url)
     logging.info("Checking URL: %s", url)
     import random
     from lxml import html
@@ -204,10 +269,10 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                         rent_text = "N/A"
 
             user_response = "\n".join([
-                f"title: {title}",
-                f"deposit: {deposit_text}",
-                f"rent: {rent_text}",
-                f"link: {href}"
+                f"عنوان: {title}",
+                f"ودیعه: {deposit_text}",
+                f"اجاره: {rent_text}",
+                f"لینک: {href}"
             ])
             await context.bot.send_photo(chat_id=chat_id, photo=image, caption=user_response)
     chat_data[chat_id]['seen_items'] = new_seen
@@ -215,11 +280,17 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
 def main():
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
+
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start), CommandHandler("newprocess", newprocess)],
         states={
             ASK_DEPOSIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_deposit)],
             ASK_RENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_rent)],
+            ASK_BALCONY: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_balcony)],
+            ASK_PARKING: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_parking)],
+            ASK_WAREHOUSE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_warehouse)],
+            ASK_ROOMS: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_rooms)],
+            ASK_SIZE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_size)],
         },
         fallbacks=[]
     )
