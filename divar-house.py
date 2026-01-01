@@ -13,10 +13,10 @@ logging.basicConfig(
 )
 
 # States for conversation
-ASK_TYPE, ASK_REGION, ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(9)
+ASK_TYPE, ASK_PROPERTY_TYPE, ASK_REGION, ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(10)
 
 # Your Telegram bot token and user ID
-TELEGRAM_TOKEN = '8199181120:AAFSAZd7IceqKA64dNWTgXdWGHgm83oxldU'
+TELEGRAM_TOKEN = '7388465442:AAGPFV-pT1pAF_bsqxDoRTw23WLoMYWoKDc'
 
 # Base URL for Divar searches
 BASE_URL = "https://divar.ir/s/tehran/"
@@ -35,28 +35,67 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     text = update.message.text.strip().lower()
+    if text == "برگشت":
+        # در اولین مرحله امکان برگشت نیست
+        await update.message.reply_text("در اولین مرحله هستید و امکان بازگشت وجود ندارد.")
+        return ASK_TYPE
     if text in ["اجاره", "rent"]:
         chat_data[chat_id] = {'type': 'rent'}
-        reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"]]
+        reply_keyboard = [["مسکونی", "تجاری/اداری"], ["برگشت"]]
         await update.message.reply_text(
-            "کدام منطقه تهران را انتخاب می‌کنید؟",
+            "نوع ملک را انتخاب کنید:",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
-        return ASK_REGION
+        return ASK_PROPERTY_TYPE
     elif text in ["خرید", "buy"]:
         chat_data[chat_id] = {'type': 'buy'}
-        reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"]]
+        reply_keyboard = [["مسکونی", "تجاری/اداری"], ["برگشت"]]
         await update.message.reply_text(
-            "کدام منطقه تهران را انتخاب می‌کنید؟",
+            "نوع ملک را انتخاب کنید:",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
-        return ASK_REGION
+        return ASK_PROPERTY_TYPE
+
+async def ask_property_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    text = update.message.text.strip().lower()
+    if text == "برگشت":
+        reply_keyboard = [["خرید", "اجاره"]]
+        await update.message.reply_text(
+            "به مرحله قبل بازگشتید. لطفاً یکی را انتخاب کنید:",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_TYPE
+    if text in ["مسکونی", "residential"]:
+        chat_data[chat_id]['property_type'] = 'residential'
+    elif text in ["تجاری/اداری", "تجاری", "اداری", "commercial", "office"]:
+        chat_data[chat_id]['property_type'] = 'commercial'
+    else:
+        reply_keyboard = [["مسکونی", "تجاری/اداری"], ["برگشت"]]
+        await update.message.reply_text(
+            "لطفاً یکی از گزینه‌های زیر را انتخاب کنید:",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_PROPERTY_TYPE
+    reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"], ["برگشت"]]
+    await update.message.reply_text(
+        "کدام منطقه تهران را انتخاب می‌کنید؟",
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    )
+    return ASK_REGION
 
 async def ask_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     region = update.message.text.strip()
+    if region == "برگشت":
+        reply_keyboard = [["مسکونی", "تجاری/اداری"], ["برگشت"]]
+        await update.message.reply_text(
+            "به مرحله قبل بازگشتید. نوع ملک را انتخاب کنید:",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_PROPERTY_TYPE
     if region not in ["۱", "2", "۲", "3", "۳", "5", "۵", "6", "۶"]:
-        reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"]]
+        reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"], ["برگشت"]]
         await update.message.reply_text(
             "لطفاً فقط یکی از مناطق ۱، ۲، ۳، ۵ یا ۶ را انتخاب کنید.",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -66,14 +105,16 @@ async def ask_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
     region_map = {"۱": "1", "۲": "2", "۳": "3", "۵": "5", "۶": "6", "1": "1", "2": "2", "3": "3", "5": "5", "6": "6"}
     chat_data[chat_id]['region'] = region_map.get(region, region)
     if chat_data[chat_id]['type'] == 'rent':
+        reply_keyboard = [["برگشت"]]
         await update.message.reply_text(
             "لطفاً مبلغ ودیعه مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۴۰۰ برای ۴۰۰,۰۰۰,۰۰۰)",
-            reply_markup=ReplyKeyboardRemove()
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return ASK_DEPOSIT
+    reply_keyboard = [["برگشت"]]
     await update.message.reply_text(
         "لطفاً قیمت مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۵۰۰۰ برای ۵,۰۰۰,۰۰۰,۰۰۰)",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     )
     return ASK_DEPOSIT
 
@@ -104,11 +145,19 @@ async def newprocess(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     deposit = update.message.text
     chat_id = update.message.chat_id
-
+    if deposit == "برگشت":
+        reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"], ["برگشت"]]
+        await update.message.reply_text(
+            "به مرحله قبل بازگشتید. کدام منطقه تهران را انتخاب می‌کنید؟",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_REGION
     try:
         deposit_value = int(deposit)
     except ValueError:
-        await update.message.reply_text("مبلغ ودیعه نامعتبر است. لطفاً یک عدد صحیح وارد کنید.")
+        reply_keyboard = [["برگشت"]]
+        await update.message.reply_text("مبلغ ودیعه نامعتبر است. لطفاً یک عدد صحیح وارد کنید.",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True))
         return ASK_DEPOSIT
 
     # Store the deposit/price in chat_data
@@ -116,10 +165,12 @@ async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # If type is rent, ask for rent, else go to next step
     if chat_data[chat_id].get('type') == 'rent':
-        await update.message.reply_text("عالی! حالا مبلغ اجاره مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۳۰ برای ۳۰,۰۰۰,۰۰۰)")
+        reply_keyboard = [["برگشت"]]
+        await update.message.reply_text("عالی! حالا مبلغ اجاره مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۳۰ برای ۳۰,۰۰۰,۰۰۰)",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True))
         return ASK_RENT
     else:
-        reply_keyboard = [["بله", "خیر", "بیخیال"]]
+        reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
         await update.message.reply_text(
             "آیا بالکن می‌خواهید؟",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -129,18 +180,26 @@ async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_rent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rent = update.message.text
     chat_id = update.message.chat_id
-
+    if rent == "برگشت":
+        reply_keyboard = [["برگشت"]]
+        await update.message.reply_text(
+            "به مرحله قبل بازگشتید. لطفاً مبلغ ودیعه مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۴۰۰ برای ۴۰۰,۰۰۰,۰۰۰)",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_DEPOSIT
     try:
         rent_value = int(rent)
     except ValueError:
-        await update.message.reply_text("مبلغ اجاره نامعتبر است. لطفاً یک عدد صحیح وارد کنید.")
+        reply_keyboard = [["برگشت"]]
+        await update.message.reply_text("مبلغ اجاره نامعتبر است. لطفاً یک عدد صحیح وارد کنید.",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True))
         return ASK_RENT
 
     # Store the rent in chat_data
     chat_data[chat_id]['rent'] = rent_value
 
     # Ask for balcony with buttons
-    reply_keyboard = [["بله", "خیر", "بیخیال"]]
+    reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
     await update.message.reply_text(
         "آیا بالکن می‌خواهید؟",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -150,11 +209,26 @@ async def ask_rent(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_balcony(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     text = update.message.text.strip().lower()
+    if text == "برگشت":
+        if chat_data[chat_id].get('type') == 'rent':
+            reply_keyboard = [["برگشت"]]
+            await update.message.reply_text(
+                "به مرحله قبل بازگشتید. لطفاً مبلغ اجاره مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۳۰ برای ۳۰,۰۰۰,۰۰۰)",
+                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+            )
+            return ASK_RENT
+        else:
+            reply_keyboard = [["برگشت"]]
+            await update.message.reply_text(
+                "به مرحله قبل بازگشتید. لطفاً مبلغ ودیعه/قیمت مورد نظر خود را وارد کنید.",
+                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+            )
+            return ASK_DEPOSIT
     if text in ["بیخیال", "skip", "رد", "نه", "خیر", "no", ""]:
         chat_data[chat_id]['balcony'] = False
     else:
         chat_data[chat_id]['balcony'] = True
-    reply_keyboard = [["بله", "خیر", "بیخیال"]]
+    reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
     await update.message.reply_text(
         "آیا پارکینگ می‌خواهید؟",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -164,11 +238,18 @@ async def ask_balcony(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_parking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     text = update.message.text.strip().lower()
+    if text == "برگشت":
+        reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
+        await update.message.reply_text(
+            "به مرحله قبل بازگشتید. آیا بالکن می‌خواهید؟",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_BALCONY
     if text in ["بیخیال", "skip", "رد", "نه", "خیر", "no", ""]:
         chat_data[chat_id]['parking'] = False
     else:
         chat_data[chat_id]['parking'] = True
-    reply_keyboard = [["بله", "خیر", "بیخیال"]]
+    reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
     await update.message.reply_text(
         "آیا انباری می‌خواهید؟",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -178,11 +259,18 @@ async def ask_parking(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_warehouse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     text = update.message.text.strip().lower()
+    if text == "برگشت":
+        reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
+        await update.message.reply_text(
+            "به مرحله قبل بازگشتید. آیا پارکینگ می‌خواهید؟",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_PARKING
     if text in ["بیخیال", "skip", "رد", "نه", "خیر", "no", ""]:
         chat_data[chat_id]['warehouse'] = False
     else:
         chat_data[chat_id]['warehouse'] = True
-    reply_keyboard = [["یک", "دو", "سه"], ["چهار", "چهار و بیشتر", "بدون اتاق"], ["بیخیال"]]
+    reply_keyboard = [["یک", "دو", "سه"], ["چهار", "چهار و بیشتر", "بدون اتاق"], ["بیخیال"], ["برگشت"]]
     await update.message.reply_text(
         "چند اتاق می‌خواهید؟",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -192,11 +280,18 @@ async def ask_warehouse(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_rooms(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     rooms = update.message.text.strip()
+    if rooms == "برگشت":
+        reply_keyboard = [["یک", "دو", "سه"], ["چهار", "چهار و بیشتر", "بدون اتاق"], ["بیخیال"], ["برگشت"]]
+        await update.message.reply_text(
+            "به مرحله قبل بازگشتید. آیا انباری می‌خواهید؟",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_WAREHOUSE
     if rooms in ["skip", "", "رد", "بیخیال"]:
         chat_data[chat_id]['rooms'] = None  # skip means do not include
     else:
         chat_data[chat_id]['rooms'] = rooms
-    reply_keyboard = [["بیخیال"]]
+    reply_keyboard = [["بیخیال"], ["برگشت"]]
     await update.message.reply_text(
         "لطفاً بازه متراژ را وارد کنید (مثلاً ۳۰-۱۰۰ یا بیخیال)",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -206,6 +301,13 @@ async def ask_rooms(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     size = update.message.text.strip()
+    if size == "برگشت":
+        reply_keyboard = [["بیخیال"], ["برگشت"]]
+        await update.message.reply_text(
+            "به مرحله قبل بازگشتید. چند اتاق می‌خواهید؟",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_ROOMS
     if size in ["skip", "", "رد", "بیخیال"]:
         chat_data[chat_id]['size'] = None  # skip means do not include
     else:
@@ -241,6 +343,7 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
     deposit = chat_data[chat_id].get('deposit')
     rent = chat_data[chat_id].get('rent')
     search_type = chat_data[chat_id].get('type', 'rent')
+    property_type = chat_data[chat_id].get('property_type', 'residential')
     region = chat_data[chat_id].get('region')
     balcony = chat_data[chat_id].get('balcony', None)
     parking = chat_data[chat_id].get('parking', None)
@@ -260,10 +363,17 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         url = region_urls[region]
         # Add price/rent filters if available
         params = []
+        # تعیین نوع ملک در URL
         if search_type == 'buy':
-            url = BASE_URL + "buy-residential/" + url
+            if property_type == 'residential':
+                url = BASE_URL + "buy-residential/" + url
+            else:
+                url = BASE_URL + "buy-commercial-property/" + url
         else:
-            url = BASE_URL + "rent-residential/" + url
+            if property_type == 'residential':
+                url = BASE_URL + "rent-residential/" + url
+            else:
+                url = BASE_URL + "rent-commercial-property/" + url
         if search_type == 'buy' and deposit:
             params.append(f"price=-{deposit * 1000000}")
         elif search_type == 'rent' and deposit:
@@ -422,6 +532,7 @@ def main():
         entry_points=[CommandHandler("start", start), CommandHandler("newprocess", newprocess)],
         states={
             ASK_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_type)],
+            ASK_PROPERTY_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_property_type)],
             ASK_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_region)],
             ASK_DEPOSIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_deposit)],
             ASK_RENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_rent)],
