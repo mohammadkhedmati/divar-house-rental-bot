@@ -552,7 +552,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         rooms_encoded = urllib.parse.quote(rooms)
         url += f"&rooms={rooms_encoded}"
     if size:
-        url += f"&size={size}"
+        # Convert Persian digits to English
+        size_english = size.replace('۰', '0').replace('۱', '1').replace('۲', '2').replace('۳', '3').replace('۴', '4').replace('۵', '5').replace('۶', '6').replace('۷', '7').replace('۸', '8').replace('۹', '9')
+        url += f"&size={size_english}"
     if balcony:
         url += "&balcony=true"
     if parking:
