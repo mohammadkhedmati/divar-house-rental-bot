@@ -442,40 +442,54 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
             new_seen.add(href)
             title = item.get("name", "")
             image = item.get("image", "")
+            year_built = "N/A"
             if search_type == 'buy':
-                # Try to get total price and price per meter
                 total_price = item.get("price", "N/A")
                 price_per_meter = item.get("price_per_meter", "N/A")
-                # If not in item, try to fetch from detail page
-                if total_price == "N/A" or price_per_meter == "N/A":
-                    for attempt in range(3):
-                        try:
-                            headers_detail = headers.copy()
-                            headers_detail["User-Agent"] = random.choice(user_agents)
-                            detail_response = requests.get(href, headers=headers_detail)
-                            detail_response.raise_for_status()
-                            detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
-                            # Try to find price and price per meter
-                            price_tag = detail_soup.find(string=lambda s: s and ("قیمت کل" in s))
-                            price_meter_tag = detail_soup.find(string=lambda s: s and ("قیمت هر متر" in s))
-                            if price_tag:
-                                total_price = price_tag.find_next("div").text.strip()
-                            if price_meter_tag:
-                                price_per_meter = price_meter_tag.find_next("div").text.strip()
-                            break
-                        except Exception as e:
-                            logging.error(f"Attempt {attempt+1}: Error fetching buy details for {href}: {e}")
-                            if attempt == 2:
-                                total_price = total_price or "N/A"
-                                price_per_meter = price_per_meter or "N/A"
+                for attempt in range(3):
+                    try:
+                        headers_detail = headers.copy()
+                        headers_detail["User-Agent"] = random.choice(user_agents)
+                        detail_response = requests.get(href, headers=headers_detail)
+                        detail_response.raise_for_status()
+                        detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
+                        # Try to find price and price per meter
+                        price_tag = detail_soup.find(string=lambda s: s and ("قیمت کل" in s))
+                        price_meter_tag = detail_soup.find(string=lambda s: s and ("قیمت هر متر" in s))
+                        # سال ساخت از جدول
+                        year_built = "N/A"
+                        table = detail_soup.find("table", class_="kt-group-row")
+                        if table:
+                            rows = table.find_all("tr")
+                            if len(rows) > 1:
+                                cells = rows[1].find_all("td")
+                                if len(cells) > 1:
+                                    year_built = cells[1].text.strip()
+                        # اگر جدول نبود یا مقدار نبود، روش قبلی
+                        if year_built == "N/A":
+                            year_tag = detail_soup.find(string=lambda s: s and ("ساخت" in s))
+                            if year_tag:
+                                year_built_div = year_tag.find_next("div")
+                                year_built = year_built_div.text.strip() if year_built_div and year_built_div.text else "N/A"
+                        if price_tag:
+                            total_price = price_tag.find_next("div").text.strip()
+                        if price_meter_tag:
+                            price_per_meter = price_meter_tag.find_next("div").text.strip()
+                        break
+                    except Exception as e:
+                        logging.error(f"Attempt {attempt+1}: Error fetching buy details for {href}: {e}")
+                        if attempt == 2:
+                            total_price = total_price or "N/A"
+                            price_per_meter = price_per_meter or "N/A"
+                            year_built = year_built or "N/A"
                 user_response = "\n".join([
                     f"عنوان: {title}",
                     f"قیمت کل: {total_price}",
                     f"قیمت هر متر: {price_per_meter}",
+                    f"سال ساخت: {year_built}",
                     f"لینک: {href}"
                 ])
             else:
-                # Fetch details from the item's page with up to 3 retries
                 deposit_text = ""
                 rent_text = ""
                 for attempt in range(3):
@@ -485,10 +499,23 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                         detail_response = requests.get(href, headers=headers_detail)
                         detail_response.raise_for_status()
                         detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
-                        # Try to find deposit and rent in the detail page
                         deposit_tag = detail_soup.find("div", string=lambda s: s and ("ودیعه" in s or "رهن" in s))
                         rent_tag = detail_soup.find("div", string=lambda s: s and ("اجاره" in s))
-                        logging.info(f"Deposit tag: {deposit_tag}, Rent tag: {rent_tag}")
+                        # سال ساخت از جدول
+                        year_built = "N/A"
+                        table = detail_soup.find("table", class_="kt-group-row")
+                        if table:
+                            rows = table.find_all("tr")
+                            if len(rows) > 1:
+                                cells = rows[1].find_all("td")
+                                if len(cells) > 1:
+                                    year_built = cells[1].text.strip()
+                        if year_built == "N/A":
+                            year_tag = detail_soup.find(string=lambda s: s and ("ساخت" in s))
+                            if year_tag:
+                                year_built_div = year_tag.find_next("div")
+                                year_built = year_built_div.text.strip() if year_built_div and year_built_div.text else "N/A"
+                        logging.info(f"Deposit tag: {deposit_tag}, Rent tag: {rent_tag}, Year tag: {year_built}")
                         if deposit_tag:
                             next_div = deposit_tag.find_next("div")
                             deposit_text = next_div.text.strip() if next_div and next_div.text else ""
@@ -515,10 +542,12 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                         if attempt == 2:
                             deposit_text = "N/A"
                             rent_text = "N/A"
+                            year_built = year_built or "N/A"
                 user_response = "\n".join([
                     f"عنوان: {title}",
                     f"ودیعه: {deposit_text}",
                     f"اجاره: {rent_text}",
+                    f"سال ساخت: {year_built}",
                     f"لینک: {href}"
                 ])
             await context.bot.send_photo(chat_id=chat_id, photo=image, caption=user_response)
