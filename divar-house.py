@@ -509,7 +509,7 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
             base_slug = None
             for district in districts:
                 if str(district['id']) == first_district_id:
-                    base_slug = district.get('slug') or district.get('second_slug')
+                    base_slug = district.get('second_slug') or district.get('slug')
                     break
             
             if not base_slug:
