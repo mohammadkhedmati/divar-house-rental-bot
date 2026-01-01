@@ -19,7 +19,7 @@ ASK_TYPE, ASK_REGION, ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREH
 TELEGRAM_TOKEN = '8199181120:AAFSAZd7IceqKA64dNWTgXdWGHgm83oxldU'
 
 # Base URL for Divar searches
-BASE_URL = "https://divar.ir/s/tehran/rent-apartment/"
+BASE_URL = "https://divar.ir/s/tehran/"
 
 # Dictionary to store chat data (including deposit and rent values)
 chat_data = {}
@@ -250,16 +250,20 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
     import urllib.parse
     # Region-specific URLs
     region_urls = {
-        "1": "https://divar.ir/s/tehran/real-estate/ajudaniye?bbox=51.4250908%2C35.7677879%2C51.5086746%2C35.8264694&districts=4183%2C42%2C43%2C44%2C45%2C47%2C48%2C49%2C50%2C51%2C52%2C53%2C54%2C55%2C56%2C57%2C58%2C60%2C61%2C62%2C63%2C64%2C65%2C66%2C85%2C910%2C930%2C931%2C942",
-        "2": "https://divar.ir/s/tehran/rent-residential/shahrak-jandarmeri?districts=139%2C171%2C172%2C200%2C201%2C202%2C203%2C205%2C4141%2C4142%2C4160%2C4161%2C4162%2C4163%2C4170%2C4330%2C4331%2C58%2C59%2C656%2C75%2C78%2C82%2C88%2C921%2C922%2C923%2C924%2C925%2C926%2C927%2C928%2C929",
-        "3": "https://divar.ir/s/tehran/rent-residential/tehran-jolfa?&districts=1035%2C315%2C360%2C4171%2C4172%2C68%2C70%2C71%2C72%2C74%2C81%2C84%2C86%2C87%2C940%2C941",
-        "5": "https://divar.ir/s/tehran/rent-residential/shahrak-koohsar?districts=141%2C143%2C145%2C146%2C147%2C148%2C151%2C152%2C153%2C154%2C155%2C156%2C157%2C158%2C159%2C160%2C167%2C168%2C169%2C170%2C173%2C174%2C4133%2C4166%2C4311%2C4312%2C82%2C919%2C920%2C921",
-        "6": "https://divar.ir/s/tehran/rent-villa/keshavarz-boulevard?districts=210%2C211%2C297%2C298%2C299%2C301%2C655%2C658%2C90%2C91%2C932%2C933%2C934%2C935%2C936%2C96"
+        "1": "ajudaniye?districts=4183%2C42%2C43%2C44%2C45%2C47%2C48%2C49%2C50%2C51%2C52%2C53%2C54%2C55%2C56%2C57%2C58%2C60%2C61%2C62%2C63%2C64%2C65%2C66%2C85%2C910%2C930%2C931%2C942",
+        "2": "shahrak-jandarmeri?districts=139%2C171%2C172%2C200%2C201%2C202%2C203%2C205%2C4141%2C4142%2C4160%2C4161%2C4162%2C4163%2C4170%2C4330%2C4331%2C58%2C59%2C656%2C75%2C78%2C82%2C88%2C921%2C922%2C923%2C924%2C925%2C926%2C927%2C928%2C929",
+        "3": "tehran-jolfa?districts=1035%2C315%2C360%2C4171%2C4172%2C68%2C70%2C71%2C72%2C74%2C81%2C84%2C86%2C87%2C940%2C941",
+        "5": "shahrak-koohsar?districts=141%2C143%2C145%2C146%2C147%2C148%2C151%2C152%2C153%2C154%2C155%2C156%2C157%2C158%2C159%2C160%2C167%2C168%2C169%2C170%2C173%2C174%2C4133%2C4166%2C4311%2C4312%2C82%2C919%2C920%2C921",
+        "6": "keshavarz-boulevard?districts=210%2C211%2C297%2C298%2C299%2C301%2C655%2C658%2C90%2C91%2C932%2C933%2C934%2C935%2C936%2C96"
     }
     if region in region_urls:
         url = region_urls[region]
         # Add price/rent filters if available
         params = []
+        if search_type == 'buy':
+            url = BASE_URL + "buy-residential/" + url
+        else:
+            url = BASE_URL + "rent-residential/" + url
         if search_type == 'buy' and deposit:
             params.append(f"price=-{deposit * 1000000}")
         elif search_type == 'rent' and deposit:
@@ -269,11 +273,6 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         if params:
             url += ('&' if '?' in url else '?') + '&'.join(params)
         url += "&has-photo=true"
-    else:
-        if search_type == 'buy':
-            url = f"https://divar.ir/s/tehran/buy-residential?price=-{deposit * 1000000}&has-photo=true"
-        else:
-            url = f"https://divar.ir/s/tehran/rent-residential?credit=-{deposit * 1000000}&has-photo=true&rent=-{rent * 1000000}"
     if rooms:
         rooms_encoded = urllib.parse.quote(rooms)
         url += f"&rooms={rooms_encoded}"
@@ -285,7 +284,6 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         url += "&parking=true"
     if warehouse:
         url += "&warehouse=true"
-    logging.info("Checking URL: %s", url)
     logging.info("Checking URL: %s", url)
     import random
     from lxml import html
