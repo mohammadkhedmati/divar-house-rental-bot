@@ -1,0 +1,954 @@
+[
+  {
+    "zone1": [
+      {
+        "id": 53,
+        "name": "ازگل",
+        "slug": "ozgol",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 40,
+        "name": "آجودانیه",
+        "slug": "ajoodanieh",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "ajudaniye"
+      },
+      {
+        "id": 48,
+        "name": "اقدسیه",
+        "slug": "aghdasieh",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "aqdasiyeh"
+      },
+      {
+        "id": 85,
+        "name": "الهیه",
+        "slug": "elahiyeh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 45,
+        "name": " امام زاده قاسم (نیاوران)",
+        "slug": "emamzade-ghasem",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "emamzadeh-ghasem"
+      },
+      {
+        "id": 57,
+        "name": "اوین",
+        "slug": "evin",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 930,
+        "name": "باغ فردوس",
+        "slug": "bagh-ferdows",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 61,
+        "name": "تجریش",
+        "slug": "tajrish",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 44,
+        "name": "جماران (نیاوران)",
+        "slug": "jamaran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 63,
+        "name": "چیذر",
+        "slug": "chizar",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 942,
+        "name": "حصار بوعلی",
+        "slug": "hesar-booali",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 931,
+        "name": "حکمت",
+        "slug": "hekmat",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 47,
+        "name": "دارآباد",
+        "slug": "darabad",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "dar-abad"
+      },
+      {
+        "id": 54,
+        "name": "دربند",
+        "slug": "darband",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 58,
+        "name": "درکه",
+        "slug": "darakeh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 66,
+        "name": "دزاشیب",
+        "slug": "dezashib",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 56,
+        "name": "زعفرانیه",
+        "slug": "zafaraniyeh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 52,
+        "name": "سوهانک",
+        "slug": "sohanak",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 910,
+        "name": "شهرک پاسداران",
+        "slug": "shahrak-pasdaran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 50,
+        "name": "شهرک گلها",
+        "slug": "shahrak-golha",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 51,
+        "name": "شهرک محلاتی",
+        "slug": "shahrak-e-mahalati",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "shahrak-mahallati"
+      },
+      {
+        "id": 4183,
+        "name": "صاحبقرانیه",
+        "slug": "sahebgharanieh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 64,
+        "name": "فرمانیه",
+        "slug": "farmaniyeh",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "farmanieh"
+      },
+      {
+        "id": 65,
+        "name": "قیطریه",
+        "slug": "qeytariyeh",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "qeytarieh"
+      },
+      {
+        "id": 43,
+        "name": "کاشانک",
+        "slug": "kashanak",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 62,
+        "name": "کامرانیه",
+        "slug": "kamraniyeh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 60,
+        "name": "محمودیه",
+        "slug": "mahmoodiyeh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 49,
+        "name": "مینی‌سیتی (شهرک نفت)",
+        "slug": "shahrak-naft",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 42,
+        "name": "نیاوران",
+        "slug": "niavaran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 55,
+        "name": "ولنجک",
+        "slug": "velenjak",
+        "parent": 1,
+        "type": "4"
+      }
+    ],
+    "zone2": [
+      {
+        "id": 138,
+        "name": "پردیسان",
+        "slug": "shahrak-e-jandarmeri",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "shahrak-jandarmeri"
+      },
+      {
+        "id": 925,
+        "name": "آسمان",
+        "slug": "aseman",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 927,
+        "name": "ایوانک",
+        "slug": "eivanak",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 922,
+        "name": "پرواز",
+        "slug": "parvaz",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 82,
+        "name": "پونک",
+        "slug": "poonak",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "punak"
+      },
+      {
+        "id": 201,
+        "name": "تهران‌ویلا",
+        "slug": "tehranvila",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "tehran-villa"
+      },
+      {
+        "id": 203,
+        "name": "توحید",
+        "slug": "tohid",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "towhid"
+      },
+      {
+        "id": 4160,
+        "name": "چوب تراش",
+        "slug": "chub-tarash",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 4161,
+        "name": "حبیب الله",
+        "slug": "habibollah",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 928,
+        "name": "دانشگاه شریف",
+        "slug": "university-of-sharif",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 926,
+        "name": "درختی",
+        "slug": "sepehr",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 58,
+        "name": "درکه",
+        "slug": "darakeh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 929,
+        "name": "دریا",
+        "slug": "darya",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 200,
+        "name": "دریان‌نو",
+        "slug": "daryan-no",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 205,
+        "name": "ستارخان",
+        "slug": "sattarkhan",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 75,
+        "name": "سعادت‌آباد",
+        "slug": "saadat-abad",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 4330,
+        "name": "سیمای ایران",
+        "slug": "simaye-iran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 656,
+        "name": "شادمان",
+        "slug": "shadman",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "shademan"
+      },
+      {
+        "id": 202,
+        "name": "شهرآرا",
+        "slug": "sharara",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "shahrara"
+      },
+      {
+        "id": 4163,
+        "name": "شهرک آزمایش",
+        "slug": "shahrak-azmayesh-tehran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 4141,
+        "name": "شهرک بوعلی",
+        "slug": "shahrak-booli",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 4331,
+        "name": "شهرک پردیسان",
+        "slug": "shahrak-pardisan-tehran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 78,
+        "name": "شهرک غرب",
+        "slug": "shahrak-e-gharb",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "shahrak-gharb"
+      },
+      {
+        "id": 4170,
+        "name": "شهرک مخابرات",
+        "slug": "shahrak-mokhaberat",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 921,
+        "name": "شهرک نفت",
+        "slug": "shahrak-naft-district5",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 4162,
+        "name": "شهرک هما",
+        "slug": "shahrak-homa",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 172,
+        "name": "صادقیه",
+        "slug": "sadeghiyeh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 171,
+        "name": "طرشت",
+        "slug": "tarasht",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 59,
+        "name": "فرحزاد",
+        "slug": "farahzad",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 4142,
+        "name": "کوهسار",
+        "slug": "kuhsar-tehran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 923,
+        "name": "کوی فراز",
+        "slug": "kuy-faraz",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 88,
+        "name": "گیشا",
+        "slug": "gisha",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 139,
+        "name": "مرزداران",
+        "slug": "marzdaran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 924,
+        "name": "هزارسنگ",
+        "slug": "hezarsang",
+        "parent": 1,
+        "type": "4"
+      }
+    ],
+    "zone3": [
+      {
+        "id": 1028,
+        "name": "سید خندان (جلفا)",
+        "slug": "tehran-jolfa",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 87,
+        "name": "آرارات",
+        "slug": "ararat",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 68,
+        "name": "اختیاریه",
+        "slug": "ekhtiyariyeh",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "ekhtiarieh"
+      },
+      {
+        "id": 4172,
+        "name": "اراضی عباس آباد",
+        "slug": "arazi-abbas-abad",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 360,
+        "name": "امانیه",
+        "slug": "amaniyeh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 86,
+        "name": "جردن",
+        "slug": "jordan",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 940,
+        "name": "درب دوم",
+        "slug": "darb-dowom",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 71,
+        "name": "دروس",
+        "slug": "darrous",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 81,
+        "name": "ده‌ونک",
+        "slug": "vanak-village",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 84,
+        "name": "زرگنده",
+        "slug": "zargandeh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 1035,
+        "name": "شیراز",
+        "slug": "shirazi",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 72,
+        "name": "ظفر",
+        "slug": "zafar",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 941,
+        "name": "قبا",
+        "slug": "qoba",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 70,
+        "name": "قلهک",
+        "slug": "gholhak",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "qolhak"
+      },
+      {
+        "id": 74,
+        "name": "میرداماد",
+        "slug": "mirdamad",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 4171,
+        "name": "نمایشگاه بین المللی",
+        "slug": "namayeshgah-beyn-olmelali",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 315,
+        "name": "ونک",
+        "slug": "vanak",
+        "parent": 1,
+        "type": "4"
+      }
+    ],
+    "zone5": [
+      {
+        "id": 140,
+        "name": "شهرک کوهسار",
+        "slug": "shahrak-e-koohsar",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "shahrak-koohsar"
+      },
+      {
+        "id": 173,
+        "name": "اباذر",
+        "slug": "aboozar",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "abazar"
+      },
+      {
+        "id": 160,
+        "name": "ارم",
+        "slug": "eram",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 167,
+        "name": "اکباتان",
+        "slug": "ekbatan",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 143,
+        "name": "المهدی",
+        "slug": "almahdi",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 920,
+        "name": "باغ فیض",
+        "slug": "bagh-feyz",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 154,
+        "name": "بهاران",
+        "slug": "baharan",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 82,
+        "name": "پونک",
+        "slug": "poonak",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "punak"
+      },
+      {
+        "id": 4311,
+        "name": "ترمینال غرب",
+        "slug": "terminal-gharb",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 148,
+        "name": "جنت‌آباد جنوبی",
+        "slug": "south-janat-abad",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "south-jannat-abad"
+      },
+      {
+        "id": 145,
+        "name": "جنت‌آباد شمالی",
+        "slug": "north-janat-abad",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "north-jannat-abad"
+      },
+      {
+        "id": 146,
+        "name": "جنت‌آباد مرکزی",
+        "slug": "central-janat-abad",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "central-jannat-abad"
+      },
+      {
+        "id": 156,
+        "name": "جوانمردان (اندیشه)",
+        "slug": "andisheh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 919,
+        "name": "حصارک",
+        "slug": "tehran-hesarak",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 157,
+        "name": "سازمان آب",
+        "slug": "sazman-ab",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "sazman-aab"
+      },
+      {
+        "id": 4133,
+        "name": "سازمان برنامه جنوبی",
+        "slug": "sazman-barname-jonubi",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 158,
+        "name": "سازمان برنامه شمالی",
+        "slug": "sazamn-barnameh",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "sazman-barnameh"
+      },
+      {
+        "id": 4312,
+        "name": "سردارجنگل",
+        "slug": "sardar-e-jangal",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 147,
+        "name": "شاهین",
+        "slug": "shahin",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 152,
+        "name": "شهران جنوبی",
+        "slug": "south-shahran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 151,
+        "name": "شهران شمالی",
+        "slug": "north-shahran",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 155,
+        "name": "شهر زیبا",
+        "slug": "shahr-e-ziba",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "shahr-ziba"
+      },
+      {
+        "id": 169,
+        "name": "شهرک آپادانا",
+        "slug": "shahrak-e-apadana",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "shahrak-apadana"
+      },
+      {
+        "id": 159,
+        "name": "شهرک پرواز",
+        "slug": "shahrak-e-parvaz",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "shahrak-parvaz"
+      },
+      {
+        "id": 921,
+        "name": "شهرک نفت",
+        "slug": "shahrak-naft-district5",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 4166,
+        "name": "شهید فکوری",
+        "slug": "shahid-fakuri",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 170,
+        "name": "فردوس",
+        "slug": "kooy-e-ferdos",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "kuy-ferdows"
+      },
+      {
+        "id": 153,
+        "name": "کن",
+        "slug": "kan",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 168,
+        "name": "کوی بیمه",
+        "slug": "kooy-e-bimeh",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "kuy-bimeh"
+      },
+      {
+        "id": 141,
+        "name": "مرادآباد",
+        "slug": "morad-abad",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 174,
+        "name": "مهران",
+        "slug": "hasan-abad-shomali",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "kuy-mehran"
+      }
+    ],
+    "zone6": [
+      {
+        "id": 208,
+        "name": "بلوار کشاورز",
+        "slug": "bolvar-e-keshavarz",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "keshavarz-boulevard"
+      },
+      {
+        "id": 301,
+        "name": "آرژانتین",
+        "slug": "arjantin",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 91,
+        "name": "امیرآباد",
+        "slug": "amir-abad",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 298,
+        "name": "ایرانشهر",
+        "slug": "iranshahr",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "iran-shahr"
+      },
+      {
+        "id": 297,
+        "name": "بهجت‌آباد",
+        "slug": "behjat-abad",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 933,
+        "name": "جهاد",
+        "slug": "jahad",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 299,
+        "name": "سنائی",
+        "slug": "motahari",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "sanaey"
+      },
+      {
+        "id": 210,
+        "name": "فاطمی",
+        "slug": "north-karegar",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "fatemi"
+      },
+      {
+        "id": 655,
+        "name": "فلسطین (میدان انقلاب)",
+        "slug": "enqelab",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "meydan-enghelab"
+      },
+      {
+        "id": 211,
+        "name": "قزل قلعه",
+        "slug": "qezel-qaleh",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 96,
+        "name": "گاندی",
+        "slug": "gandi",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "gandhi"
+      },
+      {
+        "id": 658,
+        "name": "میدان ولیعصر",
+        "slug": "valiasr",
+        "parent": 1,
+        "type": "4",
+        "second_slug": "meydan-valiasr"
+      },
+      {
+        "id": 936,
+        "name": "نجات اللهی",
+        "slug": "nejatollahi",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 935,
+        "name": "نصرت",
+        "slug": "nosrat",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 934,
+        "name": "نظامی گنجوی (توانیر)",
+        "slug": "tavanir",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 932,
+        "name": "والفجر",
+        "slug": "shahrak-valfajr",
+        "parent": 1,
+        "type": "4"
+      },
+      {
+        "id": 90,
+        "name": "یوسف‌آباد",
+        "slug": "yousef-abad",
+        "parent": 1,
+        "type": "4"
+      }
+    ]
+  }
+]

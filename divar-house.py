@@ -1,6 +1,6 @@
 
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes, CallbackQueryHandler
 import requests
 from bs4 import BeautifulSoup
 import logging
@@ -13,7 +13,7 @@ logging.basicConfig(
 )
 
 # States for conversation
-ASK_TYPE, ASK_PROPERTY_TYPE, ASK_REGION, ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(10)
+ASK_TYPE, ASK_PROPERTY_TYPE, ASK_REGION, ASK_DISTRICTS, ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(11)
 
 # Your Telegram bot token and user ID
 TELEGRAM_TOKEN = '7388465442:AAGPFV-pT1pAF_bsqxDoRTw23WLoMYWoKDc'
@@ -104,19 +104,45 @@ async def ask_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Normalize region to English digits for later use
     region_map = {"۱": "1", "۲": "2", "۳": "3", "۵": "5", "۶": "6", "1": "1", "2": "2", "3": "3", "5": "5", "6": "6"}
     chat_data[chat_id]['region'] = region_map.get(region, region)
-    if chat_data[chat_id]['type'] == 'rent':
-        reply_keyboard = [["برگشت"]]
+    chat_data[chat_id]['selected_districts'] = []
+    
+    # Load zones.json and show districts
+    try:
+        with open('zones.json', 'r', encoding='utf-8') as f:
+            zones_data = json.load(f)
+        zone_key = f"zone{chat_data[chat_id]['region']}"
+        districts = zones_data[0].get(zone_key, [])
+        
+        if not districts:
+            await update.message.reply_text("محله‌ای برای این منطقه یافت نشد.")
+            return ASK_REGION
+        
+        # Create inline keyboard with districts
+        keyboard = []
+        for i in range(0, len(districts), 2):
+            row = []
+            for j in range(2):
+                if i + j < len(districts):
+                    district = districts[i + j]
+                    row.append(InlineKeyboardButton(
+                        district['name'], 
+                        callback_data=f"district_{district['id']}"
+                    ))
+            keyboard.append(row)
+        
+        keyboard.append([InlineKeyboardButton("✅ تایید انتخاب", callback_data="confirm_districts")])
+        keyboard.append([InlineKeyboardButton("🔙 برگشت", callback_data="back_from_districts")])
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            "لطفاً مبلغ ودیعه مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۴۰۰ برای ۴۰۰,۰۰۰,۰۰۰)",
-            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+            "لطفاً محله‌های مورد نظر خود را انتخاب کنید:\n(می‌توانید چند محله انتخاب کنید)",
+            reply_markup=reply_markup
         )
-        return ASK_DEPOSIT
-    reply_keyboard = [["برگشت"]]
-    await update.message.reply_text(
-        "لطفاً قیمت مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۵۰۰۰ برای ۵,۰۰۰,۰۰۰,۰۰۰)",
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-    )
-    return ASK_DEPOSIT
+        return ASK_DISTRICTS
+    except Exception as e:
+        logging.error(f"Error loading zones.json: {e}")
+        await update.message.reply_text("خطا در بارگذاری اطلاعات محله‌ها.")
+        return ASK_REGION
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
@@ -141,6 +167,91 @@ async def newprocess(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     )
     return ASK_TYPE
+
+async def handle_district_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    chat_id = query.message.chat_id
+    data = query.data
+    
+    if data == "back_from_districts":
+        reply_keyboard = [["۱", "۲", "۳"], ["۵", "۶"], ["برگشت"]]
+        await query.message.reply_text(
+            "به مرحله قبل بازگشتید. کدام منطقه تهران را انتخاب می‌کنید؟",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        await query.message.delete()
+        return ASK_REGION
+    
+    if data == "confirm_districts":
+        if not chat_data[chat_id].get('selected_districts'):
+            await query.answer("لطفاً حداقل یک محله انتخاب کنید!", show_alert=True)
+            return ASK_DISTRICTS
+        
+        await query.message.delete()
+        if chat_data[chat_id]['type'] == 'rent':
+            reply_keyboard = [["برگشت"]]
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="لطفاً مبلغ ودیعه مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۴۰۰ برای ۴۰۰,۰۰۰,۰۰۰)",
+                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+            )
+            return ASK_DEPOSIT
+        reply_keyboard = [["برگشت"]]
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="لطفاً قیمت مورد نظر خود را وارد کنید (به میلیون تومان، مثلاً ۵۰۰۰ برای ۵,۰۰۰,۰۰۰,۰۰۰)",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return ASK_DEPOSIT
+    
+    if data.startswith("district_"):
+        district_id = data.split("_")[1]
+        selected = chat_data[chat_id].get('selected_districts', [])
+        
+        # Toggle selection
+        if district_id in selected:
+            selected.remove(district_id)
+        else:
+            selected.append(district_id)
+        
+        chat_data[chat_id]['selected_districts'] = selected
+        
+        # Reload zones to update button text
+        try:
+            with open('zones.json', 'r', encoding='utf-8') as f:
+                zones_data = json.load(f)
+            zone_key = f"zone{chat_data[chat_id]['region']}"
+            districts = zones_data[0].get(zone_key, [])
+            
+            # Create updated keyboard
+            keyboard = []
+            for i in range(0, len(districts), 2):
+                row = []
+                for j in range(2):
+                    if i + j < len(districts):
+                        district = districts[i + j]
+                        is_selected = str(district['id']) in selected
+                        button_text = f"✓ {district['name']}" if is_selected else district['name']
+                        row.append(InlineKeyboardButton(
+                            button_text,
+                            callback_data=f"district_{district['id']}"
+                        ))
+                keyboard.append(row)
+            
+            keyboard.append([InlineKeyboardButton("✅ تایید انتخاب", callback_data="confirm_districts")])
+            keyboard.append([InlineKeyboardButton("🔙 برگشت", callback_data="back_from_districts")])
+            
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_text(
+                f"لطفاً محله‌های مورد نظر خود را انتخاب کنید:\n(می‌توانید چند محله انتخاب کنید)\n\nانتخاب شده: {len(selected)} محله",
+                reply_markup=reply_markup
+            )
+        except Exception as e:
+            logging.error(f"Error updating district selection: {e}")
+        
+        return ASK_DISTRICTS
 
 async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     deposit = update.message.text
@@ -350,17 +461,40 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
     warehouse = chat_data[chat_id].get('warehouse', None)
     rooms = chat_data[chat_id].get('rooms', None)
     size = chat_data[chat_id].get('size', None)
+    selected_districts = chat_data[chat_id].get('selected_districts', [])
     import urllib.parse
-    # Region-specific URLs
-    region_urls = {
-        "1": "ajudaniye?districts=4183%2C42%2C43%2C44%2C45%2C47%2C48%2C49%2C50%2C51%2C52%2C53%2C54%2C55%2C56%2C57%2C58%2C60%2C61%2C62%2C63%2C64%2C65%2C66%2C85%2C910%2C930%2C931%2C942",
-        "2": "shahrak-jandarmeri?districts=139%2C171%2C172%2C200%2C201%2C202%2C203%2C205%2C4141%2C4142%2C4160%2C4161%2C4162%2C4163%2C4170%2C4330%2C4331%2C58%2C59%2C656%2C75%2C78%2C82%2C88%2C921%2C922%2C923%2C924%2C925%2C926%2C927%2C928%2C929",
-        "3": "tehran-jolfa?districts=1035%2C315%2C360%2C4171%2C4172%2C68%2C70%2C71%2C72%2C74%2C81%2C84%2C86%2C87%2C940%2C941",
-        "5": "shahrak-koohsar?districts=141%2C143%2C145%2C146%2C147%2C148%2C151%2C152%2C153%2C154%2C155%2C156%2C157%2C158%2C159%2C160%2C167%2C168%2C169%2C170%2C173%2C174%2C4133%2C4166%2C4311%2C4312%2C82%2C919%2C920%2C921",
-        "6": "keshavarz-boulevard?districts=210%2C211%2C297%2C298%2C299%2C301%2C655%2C658%2C90%2C91%2C932%2C933%2C934%2C935%2C936%2C96"
-    }
-    if region in region_urls:
-        url = region_urls[region]
+    
+    # Build URL based on selected districts
+    if selected_districts:
+        # Load zones.json to get slug for first district
+        try:
+            with open('zones.json', 'r', encoding='utf-8') as f:
+                zones_data = json.load(f)
+            zone_key = f"zone{region}"
+            districts = zones_data[0].get(zone_key, [])
+            
+            # Get slug from first selected district
+            first_district_id = selected_districts[0]
+            base_slug = None
+            for district in districts:
+                if str(district['id']) == first_district_id:
+                    base_slug = district.get('slug') or district.get('second_slug')
+                    break
+            
+            if not base_slug:
+                base_slug = "tehran"
+            
+            # Create districts parameter
+            districts_param = "%2C".join(selected_districts)
+            url = f"{base_slug}?districts={districts_param}"
+        except Exception as e:
+            logging.error(f"Error building URL from selected districts: {e}")
+            return
+    else:
+        logging.error("No districts selected")
+        return
+    
+    if url:
         # Add price/rent filters if available
         params = []
         # تعیین نوع ملک در URL
@@ -563,6 +697,7 @@ def main():
             ASK_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_type)],
             ASK_PROPERTY_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_property_type)],
             ASK_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_region)],
+            ASK_DISTRICTS: [CallbackQueryHandler(handle_district_selection)],
             ASK_DEPOSIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_deposit)],
             ASK_RENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_rent)],
             ASK_BALCONY: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_balcony)],
