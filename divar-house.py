@@ -422,6 +422,37 @@ async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if size in ["skip", "", "رد", "بیخیال"]:
         chat_data[chat_id]['size'] = None  # skip means do not include
     else:
+        # Validate size format (should be like "30-100" or a single number)
+        import re
+        # Check if format is correct: two numbers separated by dash (e.g., "30-100" or "۳۰-۱۰۰")
+        if '-' in size:
+            parts = size.split('-')
+            if len(parts) == 2:
+                try:
+                    # Try to convert to integers (works with both English and Persian numbers after conversion)
+                    min_size = int(parts[0].replace('۰', '0').replace('۱', '1').replace('۲', '2').replace('۳', '3').replace('۴', '4').replace('۵', '5').replace('۶', '6').replace('۷', '7').replace('۸', '8').replace('۹', '9'))
+                    max_size = int(parts[1].replace('۰', '0').replace('۱', '1').replace('۲', '2').replace('۳', '3').replace('۴', '4').replace('۵', '5').replace('۶', '6').replace('۷', '7').replace('۸', '8').replace('۹', '9'))
+                    if min_size <= 0 or max_size <= 0 or min_size >= max_size:
+                        reply_keyboard = [["بیخیال"], ["برگشت"]]
+                        await update.message.reply_text(
+                            "❌ فرمت متراژ نامعتبر است!\n\nلطفاً بازه متراژ را به صورت صحیح وارد کنید.\nمثال: ۳۰-۱۰۰ یا 30-100\n\n(عدد اول باید کوچکتر از عدد دوم باشد)",
+                            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+                        )
+                        return ASK_SIZE
+                except ValueError:
+                    reply_keyboard = [["بیخیال"], ["برگشت"]]
+                    await update.message.reply_text(
+                        "❌ فرمت متراژ نامعتبر است!\n\nلطفاً بازه متراژ را به صورت صحیح وارد کنید.\nمثال: ۳۰-۱۰۰ یا 30-100",
+                        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+                    )
+                    return ASK_SIZE
+            else:
+                reply_keyboard = [["بیخیال"], ["برگشت"]]
+                await update.message.reply_text(
+                    "❌ فرمت متراژ نامعتبر است!\n\nلطفاً بازه متراژ را به صورت صحیح وارد کنید.\nمثال: ۳۰-۱۰۰ یا 30-100",
+                    reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+                )
+                return ASK_SIZE
         chat_data[chat_id]['size'] = size
 
     await update.message.reply_text("در حال جستجوی آپارتمان‌ها... هر ۳۰ دقیقه موارد جدید را بررسی می‌کنم.")
@@ -554,32 +585,146 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         return
 
     soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Check if page shows "no results found" message
+    no_results_messages = [
+        "نتیجهٔ دقیقی پیدا نشد",
+        "نتیجه دقیقی پیدا نشد",
+        "نتیجه‌ای یافت نشد",
+        "آگهی یافت نشد"
+    ]
+    page_text = soup.get_text()
+    has_no_results = any(msg in page_text for msg in no_results_messages)
+    
+    if has_no_results:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
+        )
+        # Offer to start over
+        reply_keyboard = [["/newprocess"]]
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return
+    
     scripts = soup.find_all("script", type="application/ld+json")
     logging.info("Found %d script tags with type application/ld+json", len(scripts))
     if not scripts:
         logging.warning("No ld+json scripts found")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="❌ خطا در دریافت نتایج. لطفاً دوباره تلاش کنید."
+        )
         return
 
     try:
         items = json.loads(scripts[-1].string)
     except Exception as e:
         logging.error(f"Error parsing JSON: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="❌ خطا در پردازش نتایج. لطفاً دوباره تلاش کنید."
+        )
         return
+
+    # Check if there are any results and if items is a list of dictionaries
+    if not items or len(items) == 0:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
+        )
+        # Offer to start over
+        reply_keyboard = [["/newprocess"]]
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return
+    
+    # Check if items contains dictionaries with 'url' key (valid results)
+    # If first item is a string or doesn't have 'url', it means no valid results
+    if not isinstance(items, list) or (len(items) > 0 and not isinstance(items[0], dict)):
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
+        )
+        # Offer to start over
+        reply_keyboard = [["/newprocess"]]
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return
+    
+    # Filter out any non-dict items
+    items = [item for item in items if isinstance(item, dict) and item.get("url")]
+    
+    if len(items) == 0:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
+        )
+        # Offer to start over
+        reply_keyboard = [["/newprocess"]]
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return
+
+    # Send initial message
+    if send_all:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"🔍 در حال بررسی نتایج...\n\n🔗 لینک جستجو:\n{url}"
+        )
 
     seen_items = chat_data[chat_id].get('seen_items', set())
     new_seen = set(seen_items)
     logging.info("seen_items: %s", seen_items)
+    
+    # Track valid items and new items
+    valid_items = []
+    new_items_count = 0
+    
     for item in items:
         href = item.get("url")
         is_new = href not in seen_items
+        
+        # Initialize item validation
+        item_matches = True
+        title = item.get("name", "")
+        image = item.get("image", "")
+        year_built = "N/A"
+        
         if send_all or is_new:
-            new_seen.add(href)
-            title = item.get("name", "")
-            image = item.get("image", "")
-            year_built = "N/A"
             if search_type == 'buy':
                 total_price = item.get("price", "N/A")
                 price_per_meter = item.get("price_per_meter", "N/A")
+                
+                # Validate price matches user's deposit (max price) filter
+                if deposit:
+                    try:
+                        import re
+                        # Extract numeric value from price string
+                        price_str = str(total_price).replace(",", "").replace("تومان", "").strip()
+                        price_numeric = re.sub(r'[^\d]', '', price_str)
+                        if price_numeric:
+                            item_price = int(price_numeric)
+                            max_price = deposit * 1000000
+                            if item_price > max_price:
+                                item_matches = False
+                                logging.info(f"Filtering out item: price {item_price} > max {max_price}")
+                                continue  # Skip this item
+                    except Exception as e:
+                        logging.error(f"Error parsing price: {e}")
+                
                 for attempt in range(3):
                     try:
                         headers_detail = headers.copy()
@@ -677,6 +822,33 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                             deposit_text = "N/A"
                             rent_text = "N/A"
                             year_built = year_built or "N/A"
+                
+                # Validate deposit and rent match user's filters
+                if deposit or rent:
+                    try:
+                        import re
+                        if deposit and deposit_text and deposit_text != "N/A":
+                            deposit_numeric = re.sub(r'[^\d]', '', str(deposit_text))
+                            if deposit_numeric:
+                                item_deposit = int(deposit_numeric)
+                                max_deposit = deposit * 1000000
+                                if item_deposit > max_deposit:
+                                    item_matches = False
+                                    logging.info(f"Filtering out item: deposit {item_deposit} > max {max_deposit}")
+                                    continue  # Skip this item
+                        
+                        if rent and rent_text and rent_text != "N/A" and item_matches:
+                            rent_numeric = re.sub(r'[^\d]', '', str(rent_text))
+                            if rent_numeric:
+                                item_rent = int(rent_numeric)
+                                max_rent = rent * 1000000
+                                if item_rent > max_rent:
+                                    item_matches = False
+                                    logging.info(f"Filtering out item: rent {item_rent} > max {max_rent}")
+                                    continue  # Skip this item
+                    except Exception as e:
+                        logging.error(f"Error parsing deposit/rent: {e}")
+                
                 user_response = "\n".join([
                     f"عنوان: {title}",
                     f"ودیعه: {deposit_text}",
@@ -684,7 +856,43 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                     f"سال ساخت: {year_built}",
                     f"لینک: {href}"
                 ])
-            await context.bot.send_photo(chat_id=chat_id, photo=image, caption=user_response)
+            
+            # Only send if item matches all criteria
+            if item_matches:
+                valid_items.append(item)
+                new_seen.add(href)
+                if is_new:
+                    new_items_count += 1
+                await context.bot.send_photo(chat_id=chat_id, photo=image, caption=user_response)
+    
+    # Send summary after processing all items
+    if send_all:
+        if len(valid_items) == 0:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nدیوار {len(items)} نتیجه بازگشت داد، اما هیچ‌کدام با معیارهای قیمتی شما مطابقت نداشتند.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
+            )
+            # Offer to start over
+            reply_keyboard = [["/newprocess"]]
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+            )
+        else:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"✅ تعداد نتایج مطابق با فیلترهای شما: {len(valid_items)} مورد"
+            )
+    elif not send_all:
+        if new_items_count > 0:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"🆕 {new_items_count} مورد جدید یافت شد!"
+            )
+        else:
+            logging.info(f"No new matching items found for chat {chat_id}")
+    
     chat_data[chat_id]['seen_items'] = new_seen
 
 def main():
