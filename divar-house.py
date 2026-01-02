@@ -806,6 +806,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                 total_price = "N/A"
                 price_per_meter = "N/A"
                 year_built = "N/A"
+                floor = "N/A"
+                elevator = "N/A"
+                bedroom_count = "N/A"
                 
                 # Extract data from API response based on actual structure
                 if detail_data and 'sections' in detail_data:
@@ -815,15 +818,17 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                             for widget in widgets:
                                 widget_type = widget.get('widget_type')
                                 
-                                # Extract year built from GROUP_INFO_ROW
+                                # Extract year built and bedroom count from GROUP_INFO_ROW
                                 if widget_type == 'GROUP_INFO_ROW':
                                     data = widget.get('data', {})
                                     items = data.get('items', [])
                                     for item_data in items:
                                         if item_data.get('title') == 'ساخت':
                                             year_built = item_data.get('value', 'N/A')
+                                        elif item_data.get('title') == 'اتاق':
+                                            bedroom_count = item_data.get('value', 'N/A')
                                 
-                                # Extract prices from UNEXPANDABLE_ROW
+                                # Extract prices and floor from UNEXPANDABLE_ROW
                                 elif widget_type == 'UNEXPANDABLE_ROW':
                                     data = widget.get('data', {})
                                     widget_title = data.get('title', '')
@@ -833,6 +838,45 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                                         total_price = widget_value if widget_value else 'N/A'
                                     elif 'قیمت هر متر' in widget_title:
                                         price_per_meter = widget_value if widget_value else 'N/A'
+                                    elif 'طبقه' == widget_title:
+                                        floor = widget_value if widget_value else 'N/A'
+                                
+                                # Extract elevator from GROUP_FEATURE_ROW
+                                elif widget_type == 'GROUP_FEATURE_ROW':
+                                    data = widget.get('data', {})
+                                    items = data.get('items', [])
+                                    for item_data in items:
+                                        if item_data.get('title') == 'آسانسور':
+                                            is_available = item_data.get('available', False)
+                                            elevator = 'دارد' if is_available else 'ندارد'
+                
+                # Validate bedroom count matches user's requirement
+                user_rooms = chat_data[chat_id].get('rooms')
+                if user_rooms and bedroom_count != "N/A":
+                    # Convert Persian/Farsi room names to numbers for comparison
+                    room_mapping = {
+                        "یک": "۱", "دو": "۲", "سه": "۳", "چهار": "۴",
+                        "بدون اتاق": "۰"
+                    }
+                    user_rooms_normalized = room_mapping.get(user_rooms, user_rooms)
+                    
+                    # Handle "چهار و بیشتر" case
+                    if user_rooms == "چهار و بیشتر":
+                        try:
+                            # Convert Persian digits to English for comparison
+                            bedroom_num = int(bedroom_count.replace('۰', '0').replace('۱', '1').replace('۲', '2').replace('۳', '3').replace('۴', '4').replace('۵', '5').replace('۶', '6').replace('۷', '7').replace('۸', '8').replace('۹', '9'))
+                            if bedroom_num < 4:
+                                item_matches = False
+                                logging.info(f"Filtering out item: bedroom count {bedroom_count} < 4")
+                                continue
+                        except:
+                            pass
+                    else:
+                        # Exact match check
+                        if bedroom_count != user_rooms_normalized:
+                            item_matches = False
+                            logging.info(f"Filtering out item: bedroom count {bedroom_count} != {user_rooms_normalized}")
+                            continue
                 
                 # Validate price matches user's deposit (max price) filter
                 if deposit and total_price != "N/A":
@@ -854,6 +898,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                     f"عنوان: {title}",
                     f"قیمت کل: {total_price}",
                     f"قیمت هر متر: {price_per_meter}",
+                    f"تعداد اتاق: {bedroom_count}",
+                    f"طبقه: {floor}",
+                    f"آسانسور: {elevator}",
                     f"سال ساخت: {year_built}",
                     f"لینک: {href}"
                 ])
