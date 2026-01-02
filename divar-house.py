@@ -781,12 +781,61 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         year_built = "N/A"
         
         if send_all or is_new:
+            # Extract token from URL (e.g., https://divar.ir/v/title/TOKEN)
+            post_token = href.rstrip('/').split('/')[-1]
+            
+            # Fetch post details from Divar API
+            api_url = f"https://api.divar.ir/v8/posts-v2/web/{post_token}"
+            detail_data = None
+            
+            for attempt in range(3):
+                try:
+                    headers_api = headers.copy()
+                    headers_api["User-Agent"] = random.choice(user_agents)
+                    api_response = requests.get(api_url, headers=headers_api, timeout=10)
+                    api_response.raise_for_status()
+                    detail_data = api_response.json()
+                    break
+                except Exception as e:
+                    logging.error(f"Attempt {attempt+1}: Error fetching API data for {post_token}: {e}")
+                    if attempt == 2:
+                        detail_data = None
+            
             if search_type == 'buy':
-                total_price = item.get("price", "N/A")
-                price_per_meter = item.get("price_per_meter", "N/A")
+                # Initialize values as N/A
+                total_price = "N/A"
+                price_per_meter = "N/A"
+                year_built = "N/A"
+                
+                # Extract data from API response based on actual structure
+                if detail_data and 'sections' in detail_data:
+                    for section in detail_data['sections']:
+                        if section.get('section_name') == 'LIST_DATA':
+                            widgets = section.get('widgets', [])
+                            for widget in widgets:
+                                widget_type = widget.get('widget_type')
+                                
+                                # Extract year built from GROUP_INFO_ROW
+                                if widget_type == 'GROUP_INFO_ROW':
+                                    data = widget.get('data', {})
+                                    items = data.get('items', [])
+                                    for item_data in items:
+                                        if item_data.get('title') == 'ساخت':
+                                            year_built = item_data.get('value', 'N/A')
+                                
+                                # Extract prices from UNEXPANDABLE_ROW
+                                elif widget_type == 'UNEXPANDABLE_ROW':
+                                    data = widget.get('data', {})
+                                    widget_title = data.get('title', '')
+                                    widget_value = data.get('value', '')
+                                    
+                                    if 'قیمت کل' in widget_title:
+                                        total_price = widget_value if widget_value else 'N/A'
+                                    elif 'قیمت هر متر' in widget_title:
+                                        price_per_meter = widget_value if widget_value else 'N/A'
                 
                 # Validate price matches user's deposit (max price) filter
-                if deposit:
+                if deposit and total_price != "N/A":
                     try:
                         import re
                         # Extract numeric value from price string
@@ -801,43 +850,6 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                                 continue  # Skip this item
                     except Exception as e:
                         logging.error(f"Error parsing price: {e}")
-                
-                for attempt in range(3):
-                    try:
-                        headers_detail = headers.copy()
-                        headers_detail["User-Agent"] = random.choice(user_agents)
-                        detail_response = requests.get(href, headers=headers_detail)
-                        detail_response.raise_for_status()
-                        detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
-                        # Try to find price and price per meter
-                        price_tag = detail_soup.find(string=lambda s: s and ("قیمت کل" in s))
-                        price_meter_tag = detail_soup.find(string=lambda s: s and ("قیمت هر متر" in s))
-                        # سال ساخت از جدول
-                        year_built = "N/A"
-                        table = detail_soup.find("table", class_="kt-group-row")
-                        if table:
-                            rows = table.find_all("tr")
-                            if len(rows) > 1:
-                                cells = rows[1].find_all("td")
-                                if len(cells) > 1:
-                                    year_built = cells[1].text.strip()
-                        # اگر جدول نبود یا مقدار نبود، روش قبلی
-                        if year_built == "N/A":
-                            year_tag = detail_soup.find(string=lambda s: s and ("ساخت" in s))
-                            if year_tag:
-                                year_built_div = year_tag.find_next("div")
-                                year_built = year_built_div.text.strip() if year_built_div and year_built_div.text else "N/A"
-                        if price_tag:
-                            total_price = price_tag.find_next("div").text.strip()
-                        if price_meter_tag:
-                            price_per_meter = price_meter_tag.find_next("div").text.strip()
-                        break
-                    except Exception as e:
-                        logging.error(f"Attempt {attempt+1}: Error fetching buy details for {href}: {e}")
-                        if attempt == 2:
-                            total_price = total_price or "N/A"
-                            price_per_meter = price_per_meter or "N/A"
-                            year_built = year_built or "N/A"
                 user_response = "\n".join([
                     f"عنوان: {title}",
                     f"قیمت کل: {total_price}",
@@ -846,59 +858,37 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                     f"لینک: {href}"
                 ])
             else:
-                deposit_text = ""
-                rent_text = ""
-                for attempt in range(3):
-                    try:
-                        headers_detail = headers.copy()
-                        headers_detail["User-Agent"] = random.choice(user_agents)
-                        detail_response = requests.get(href, headers=headers_detail)
-                        detail_response.raise_for_status()
-                        detail_soup = BeautifulSoup(detail_response.text, 'html.parser')
-                        deposit_tag = detail_soup.find("div", string=lambda s: s and ("ودیعه" in s or "رهن" in s))
-                        rent_tag = detail_soup.find("div", string=lambda s: s and ("اجاره" in s))
-                        # سال ساخت از جدول
-                        year_built = "N/A"
-                        table = detail_soup.find("table", class_="kt-group-row")
-                        if table:
-                            rows = table.find_all("tr")
-                            if len(rows) > 1:
-                                cells = rows[1].find_all("td")
-                                if len(cells) > 1:
-                                    year_built = cells[1].text.strip()
-                        if year_built == "N/A":
-                            year_tag = detail_soup.find(string=lambda s: s and ("ساخت" in s))
-                            if year_tag:
-                                year_built_div = year_tag.find_next("div")
-                                year_built = year_built_div.text.strip() if year_built_div and year_built_div.text else "N/A"
-                        logging.info(f"Deposit tag: {deposit_tag}, Rent tag: {rent_tag}, Year tag: {year_built}")
-                        if deposit_tag:
-                            next_div = deposit_tag.find_next("div")
-                            deposit_text = next_div.text.strip() if next_div and next_div.text else ""
-                        else:
-                            try:
-                                root = html.fromstring(detail_response.text)
-                                nodes = root.xpath('/html/body/div[1]/div[1]/div/main/article/div/div[1]/section[1]/div[5]/div[2]/div[2]/p')
-                                deposit_text = nodes[0].text_content().strip()
-                            except Exception:
-                                deposit_text = rent_tag.text.strip() if rent_tag and rent_tag.text else ""
-                        if rent_tag:
-                            next_div = rent_tag.find_next("div")
-                            rent_text = next_div.text.strip() if next_div and next_div.text else ""
-                        else:
-                            try:
-                                root = html.fromstring(detail_response.text)
-                                nodes = root.xpath('/html/body/div[1]/div[1]/div/main/article/div/div[1]/section[1]/div[5]/div[3]/div[1]/p')
-                                deposit_text = nodes[0].text_content().strip()
-                            except Exception:
-                                deposit_text = rent_tag.text.strip() if rent_tag and rent_tag.text else ""
-                        break  # Success, exit retry loop
-                    except Exception as e:
-                        logging.error(f"Attempt {attempt+1}: Error fetching details for {href}: {e}")
-                        if attempt == 2:
-                            deposit_text = "N/A"
-                            rent_text = "N/A"
-                            year_built = year_built or "N/A"
+                # Initialize values as N/A
+                deposit_text = "N/A"
+                rent_text = "N/A"
+                year_built = "N/A"
+                
+                # Extract data from API response based on actual structure
+                if detail_data and 'sections' in detail_data:
+                    for section in detail_data['sections']:
+                        if section.get('section_name') == 'LIST_DATA':
+                            widgets = section.get('widgets', [])
+                            for widget in widgets:
+                                widget_type = widget.get('widget_type')
+                                
+                                # Extract year built from GROUP_INFO_ROW
+                                if widget_type == 'GROUP_INFO_ROW':
+                                    data = widget.get('data', {})
+                                    items = data.get('items', [])
+                                    for item_data in items:
+                                        if item_data.get('title') == 'ساخت':
+                                            year_built = item_data.get('value', 'N/A')
+                                
+                                # Extract deposit and rent from UNEXPANDABLE_ROW
+                                elif widget_type == 'UNEXPANDABLE_ROW':
+                                    data = widget.get('data', {})
+                                    widget_title = data.get('title', '')
+                                    widget_value = data.get('value', '')
+                                    
+                                    if 'ودیعه' in widget_title or 'رهن' in widget_title:
+                                        deposit_text = widget_value if widget_value else 'N/A'
+                                    elif 'اجاره' in widget_title:
+                                        rent_text = widget_value if widget_value else 'N/A'
                 
                 # Validate deposit and rent match user's filters
                 if deposit or rent:
