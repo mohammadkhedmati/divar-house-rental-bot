@@ -16,7 +16,7 @@ logging.basicConfig(
 ASK_TYPE, ASK_PROPERTY_TYPE, ASK_REGION, ASK_DISTRICTS, ASK_DEPOSIT, ASK_RENT, ASK_BALCONY, ASK_PARKING, ASK_WAREHOUSE, ASK_ROOMS, ASK_SIZE = range(11)
 
 # Your Telegram bot token and user ID
-TELEGRAM_TOKEN = '8199181120:AAFSAZd7IceqKA64dNWTgXdWGHgm83oxldU'
+TELEGRAM_TOKEN = '7388465442:AAGPFV-pT1pAF_bsqxDoRTw23WLoMYWoKDc'
 
 # Base URL for Divar searches
 BASE_URL = "https://divar.ir/s/tehran/"
@@ -152,6 +152,33 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
         job.schedule_removal()
     await update.message.reply_text("اعلان‌های جستجوی آپارتمان متوقف شد.")
 
+async def continue_job(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat_id
+    
+    # Check if user has active search data
+    if chat_id not in chat_data:
+        await update.message.reply_text("شما جستجوی فعالی ندارید. لطفاً ابتدا با دستور /start یا /newprocess جستجوی جدید آغاز کنید.")
+        return
+    
+    # Reset job counter for another 3 runs
+    chat_data[chat_id]['job_count'] = 0
+    
+    # Remove any existing jobs
+    jobs = context.job_queue.get_jobs_by_name(str(chat_id))
+    for job in jobs:
+        job.schedule_removal()
+    
+    # Restart the job
+    context.job_queue.run_repeating(
+        check_new_items,
+        interval=30 * 60,  # 30 minutes
+        first=30 * 60,
+        data=chat_id,
+        name=str(chat_id)
+    )
+    
+    await update.message.reply_text("✅ جستجوی خودکار از سر گرفته شد! ۳ بار دیگر بررسی خواهم کرد.\n\nبرای توقف: /stop")
+
 
 async def newprocess(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
@@ -281,7 +308,7 @@ async def ask_deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True))
         return ASK_RENT
     else:
-        reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
+        reply_keyboard = [["بله", "خیر", "فرقی نمیکنه"], ["برگشت"]]
         await update.message.reply_text(
             "آیا بالکن می‌خواهید؟",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -310,7 +337,7 @@ async def ask_rent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data[chat_id]['rent'] = rent_value
 
     # Ask for balcony with buttons
-    reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
+    reply_keyboard = [["بله", "خیر", "فرقی نمیکنه"], ["برگشت"]]
     await update.message.reply_text(
         "آیا بالکن می‌خواهید؟",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -335,11 +362,11 @@ async def ask_balcony(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
             )
             return ASK_DEPOSIT
-    if text in ["بیخیال", "skip", "رد", "نه", "خیر", "no", ""]:
+    if text in ["فرقی نمیکنه", "skip", "رد", "نه", "خیر", "no", ""]:
         chat_data[chat_id]['balcony'] = False
     else:
         chat_data[chat_id]['balcony'] = True
-    reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
+    reply_keyboard = [["بله", "خیر", "فرقی نمیکنه"], ["برگشت"]]
     await update.message.reply_text(
         "آیا پارکینگ می‌خواهید؟",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -350,17 +377,17 @@ async def ask_parking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     text = update.message.text.strip().lower()
     if text == "برگشت":
-        reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
+        reply_keyboard = [["بله", "خیر", "فرقی نمیکنه"], ["برگشت"]]
         await update.message.reply_text(
             "به مرحله قبل بازگشتید. آیا بالکن می‌خواهید؟",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return ASK_BALCONY
-    if text in ["بیخیال", "skip", "رد", "نه", "خیر", "no", ""]:
+    if text in ["فرقی نمیکنه", "skip", "رد", "نه", "خیر", "no", ""]:
         chat_data[chat_id]['parking'] = False
     else:
         chat_data[chat_id]['parking'] = True
-    reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
+    reply_keyboard = [["بله", "خیر", "فرقی نمیکنه"], ["برگشت"]]
     await update.message.reply_text(
         "آیا انباری می‌خواهید؟",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -371,17 +398,17 @@ async def ask_warehouse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     text = update.message.text.strip().lower()
     if text == "برگشت":
-        reply_keyboard = [["بله", "خیر", "بیخیال"], ["برگشت"]]
+        reply_keyboard = [["بله", "خیر", "فرقی نمیکنه"], ["برگشت"]]
         await update.message.reply_text(
             "به مرحله قبل بازگشتید. آیا پارکینگ می‌خواهید؟",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return ASK_PARKING
-    if text in ["بیخیال", "skip", "رد", "نه", "خیر", "no", ""]:
+    if text in ["فرقی نمیکنه", "skip", "رد", "نه", "خیر", "no", ""]:
         chat_data[chat_id]['warehouse'] = False
     else:
         chat_data[chat_id]['warehouse'] = True
-    reply_keyboard = [["یک", "دو", "سه"], ["چهار", "چهار و بیشتر", "بدون اتاق"], ["بیخیال"], ["برگشت"]]
+    reply_keyboard = [["یک", "دو", "سه"], ["چهار", "چهار و بیشتر", "بدون اتاق"], ["فرقی نمیکنه"], ["برگشت"]]
     await update.message.reply_text(
         "چند اتاق می‌خواهید؟",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -392,19 +419,19 @@ async def ask_rooms(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     rooms = update.message.text.strip()
     if rooms == "برگشت":
-        reply_keyboard = [["یک", "دو", "سه"], ["چهار", "چهار و بیشتر", "بدون اتاق"], ["بیخیال"], ["برگشت"]]
+        reply_keyboard = [["یک", "دو", "سه"], ["چهار", "چهار و بیشتر", "بدون اتاق"], ["فرقی نمیکنه"], ["برگشت"]]
         await update.message.reply_text(
             "به مرحله قبل بازگشتید. آیا انباری می‌خواهید؟",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return ASK_WAREHOUSE
-    if rooms in ["skip", "", "رد", "بیخیال"]:
+    if rooms in ["skip", "", "رد", "فرقی نمیکنه"]:
         chat_data[chat_id]['rooms'] = None  # skip means do not include
     else:
         chat_data[chat_id]['rooms'] = rooms
-    reply_keyboard = [["بیخیال"], ["برگشت"]]
+    reply_keyboard = [["فرقی نمیکنه"], ["برگشت"]]
     await update.message.reply_text(
-        "لطفاً بازه متراژ را وارد کنید (مثلاً ۳۰-۱۰۰ یا بیخیال)",
+        "لطفاً بازه متراژ را وارد کنید (مثلاً ۳۰-۱۰۰ یا فرقی نمیکنه)",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     )
     return ASK_SIZE
@@ -413,13 +440,13 @@ async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     size = update.message.text.strip()
     if size == "برگشت":
-        reply_keyboard = [["بیخیال"], ["برگشت"]]
+        reply_keyboard = [["فرقی نمیکنه"], ["برگشت"]]
         await update.message.reply_text(
             "به مرحله قبل بازگشتید. چند اتاق می‌خواهید؟",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return ASK_ROOMS
-    if size in ["skip", "", "رد", "بیخیال"]:
+    if size in ["skip", "", "رد", "فرقی نمیکنه"]:
         chat_data[chat_id]['size'] = None  # skip means do not include
     else:
         # Validate size format (should be like "30-100" or a single number)
@@ -433,21 +460,21 @@ async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     min_size = int(parts[0].replace('۰', '0').replace('۱', '1').replace('۲', '2').replace('۳', '3').replace('۴', '4').replace('۵', '5').replace('۶', '6').replace('۷', '7').replace('۸', '8').replace('۹', '9'))
                     max_size = int(parts[1].replace('۰', '0').replace('۱', '1').replace('۲', '2').replace('۳', '3').replace('۴', '4').replace('۵', '5').replace('۶', '6').replace('۷', '7').replace('۸', '8').replace('۹', '9'))
                     if min_size <= 0 or max_size <= 0 or min_size >= max_size:
-                        reply_keyboard = [["بیخیال"], ["برگشت"]]
+                        reply_keyboard = [["فرقی نمیکنه"], ["برگشت"]]
                         await update.message.reply_text(
                             "❌ فرمت متراژ نامعتبر است!\n\nلطفاً بازه متراژ را به صورت صحیح وارد کنید.\nمثال: ۳۰-۱۰۰ یا 30-100\n\n(عدد اول باید کوچکتر از عدد دوم باشد)",
                             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
                         )
                         return ASK_SIZE
                 except ValueError:
-                    reply_keyboard = [["بیخیال"], ["برگشت"]]
+                    reply_keyboard = [["فرقی نمیکنه"], ["برگشت"]]
                     await update.message.reply_text(
                         "❌ فرمت متراژ نامعتبر است!\n\nلطفاً بازه متراژ را به صورت صحیح وارد کنید.\nمثال: ۳۰-۱۰۰ یا 30-100",
                         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
                     )
                     return ASK_SIZE
             else:
-                reply_keyboard = [["بیخیال"], ["برگشت"]]
+                reply_keyboard = [["فرقی نمیکنه"], ["برگشت"]]
                 await update.message.reply_text(
                     "❌ فرمت متراژ نامعتبر است!\n\nلطفاً بازه متراژ را به صورت صحیح وارد کنید.\nمثال: ۳۰-۱۰۰ یا 30-100",
                     reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -456,6 +483,9 @@ async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data[chat_id]['size'] = size
 
     await update.message.reply_text("در حال جستجوی آپارتمان‌ها... هر ۳۰ دقیقه موارد جدید را بررسی می‌کنم.")
+
+    # Initialize job counter
+    chat_data[chat_id]['job_count'] = 0
 
     # Fetch and send all current items immediately
     await fetch_and_send_items(chat_id, context, send_all=True)
@@ -474,8 +504,41 @@ async def ask_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return ConversationHandler.END
 
+async def stop_jobs_for_chat(chat_id, context):
+    """متوقف کردن تمام job‌های مربوط به یک chat_id"""
+    jobs = context.job_queue.get_jobs_by_name(str(chat_id))
+    for job in jobs:
+        job.schedule_removal()
+    logging.info(f"Stopped all jobs for chat {chat_id}")
+
 async def check_new_items(context: ContextTypes.DEFAULT_TYPE):
     chat_id = context.job.data
+    
+    # Check if chat_data exists for this chat
+    if chat_id not in chat_data:
+        return
+    
+    # Increment job counter
+    chat_data[chat_id]['job_count'] = chat_data[chat_id].get('job_count', 0) + 1
+    current_count = chat_data[chat_id]['job_count']
+    
+    logging.info(f"Job execution #{current_count} for chat {chat_id}")
+    
+    # Check if this is the 3rd execution
+    if current_count >= 3:
+        # Stop the job
+        await stop_jobs_for_chat(chat_id, context)
+        
+        # Send message to user
+        reply_keyboard = [["/continue"]]
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="⏸ جستجوی خودکار پس از ۳ بار اجرا متوقف شد.\n\nاگر می‌خواهید جستجوی خودکار ادامه پیدا کند، دستور /continue را ارسال کنید.\n\nبرای شروع جستجوی جدید: /newprocess",
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return
+    
+    # Continue with normal execution
     await fetch_and_send_items(chat_id, context, send_all=False)
 
 async def fetch_and_send_items(chat_id, context, send_all=False):
@@ -599,6 +662,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
     has_no_results = any(msg in page_text for msg in no_results_messages)
     
     if has_no_results:
+        # متوقف کردن job‌ها
+        await stop_jobs_for_chat(chat_id, context)
+        
         await context.bot.send_message(
             chat_id=chat_id,
             text="❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
@@ -607,7 +673,7 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         reply_keyboard = [["/newprocess"]]
         await context.bot.send_message(
             chat_id=chat_id,
-            text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+            text="⏹ جستجوی خودکار متوقف شد.\n\nبرای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return
@@ -634,6 +700,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
 
     # Check if there are any results and if items is a list of dictionaries
     if not items or len(items) == 0:
+        # متوقف کردن job‌ها
+        await stop_jobs_for_chat(chat_id, context)
+        
         await context.bot.send_message(
             chat_id=chat_id,
             text="❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
@@ -642,7 +711,7 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         reply_keyboard = [["/newprocess"]]
         await context.bot.send_message(
             chat_id=chat_id,
-            text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+            text="⏹ جستجوی خودکار متوقف شد.\n\nبرای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return
@@ -650,6 +719,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
     # Check if items contains dictionaries with 'url' key (valid results)
     # If first item is a string or doesn't have 'url', it means no valid results
     if not isinstance(items, list) or (len(items) > 0 and not isinstance(items[0], dict)):
+        # متوقف کردن job‌ها
+        await stop_jobs_for_chat(chat_id, context)
+        
         await context.bot.send_message(
             chat_id=chat_id,
             text="❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
@@ -658,7 +730,7 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         reply_keyboard = [["/newprocess"]]
         await context.bot.send_message(
             chat_id=chat_id,
-            text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+            text="⏹ جستجوی خودکار متوقف شد.\n\nبرای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return
@@ -667,6 +739,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
     items = [item for item in items if isinstance(item, dict) and item.get("url")]
     
     if len(items) == 0:
+        # متوقف کردن job‌ها
+        await stop_jobs_for_chat(chat_id, context)
+        
         await context.bot.send_message(
             chat_id=chat_id,
             text="❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
@@ -675,7 +750,7 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
         reply_keyboard = [["/newprocess"]]
         await context.bot.send_message(
             chat_id=chat_id,
-            text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+            text="⏹ جستجوی خودکار متوقف شد.\n\nبرای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
             reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
         )
         return
@@ -870,6 +945,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
     # Send summary after processing all items
     if send_all:
         if len(valid_items) == 0:
+            # متوقف کردن job‌ها
+            await stop_jobs_for_chat(chat_id, context)
+            
             await context.bot.send_message(
                 chat_id=chat_id,
                 text=f"❌ متاسفانه هیچ نتیجه‌ای با فیلترهای انتخابی شما یافت نشد.\n\nدیوار {len(items)} نتیجه بازگشت داد، اما هیچ‌کدام با معیارهای قیمتی شما مطابقت نداشتند.\n\nلطفاً فیلترهای خود را تغییر دهید و دوباره امتحان کنید."
@@ -878,7 +956,7 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
             reply_keyboard = [["/newprocess"]]
             await context.bot.send_message(
                 chat_id=chat_id,
-                text="برای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
+                text="⏹ جستجوی خودکار متوقف شد.\n\nبرای شروع جستجوی جدید دستور /newprocess را ارسال کنید.",
                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
             )
         else:
@@ -921,6 +999,7 @@ def main():
 
     application.add_handler(conv_handler)
     application.add_handler(CommandHandler("stop", stop))
+    application.add_handler(CommandHandler("continue", continue_job))
 
     application.run_polling()
 
