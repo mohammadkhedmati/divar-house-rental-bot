@@ -921,7 +921,7 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                             for widget in widgets:
                                 widget_type = widget.get('widget_type')
                                 
-                                # Extract year built from GROUP_INFO_ROW
+                                # Extract year built and bedroom count from GROUP_INFO_ROW
                                 if widget_type == 'GROUP_INFO_ROW':
                                     data = widget.get('data', {})
                                     items = data.get('items', [])
@@ -931,17 +931,19 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                                         elif item_data.get('title') == 'اتاق':
                                             bedroom_count = item_data.get('value', 'N/A')
                                 
-                                # Extract deposit and rent from UNEXPANDABLE_ROW
+                                # Extract deposit, rent, and floor from UNEXPANDABLE_ROW
                                 elif widget_type == 'UNEXPANDABLE_ROW':
                                     data = widget.get('data', {})
                                     widget_title = data.get('title', '')
                                     widget_value = data.get('value', '')
                                     
-                                    if 'ودیعه' in widget_title or 'رهن' in widget_title:
+                                    # Check exact title match for deposit (not "ودیعه و اجاره")
+                                    if widget_title == 'ودیعه' or widget_title == 'رهن':
                                         deposit_text = widget_value if widget_value else 'N/A'
-                                    elif 'اجاره' in widget_title:
+                                    # Check for rent with exact match (avoid matching other fields)
+                                    elif widget_title == 'اجارهٔ ماهانه' or widget_title == 'اجاره ماهانه':
                                         rent_text = widget_value if widget_value else 'N/A'
-                                    elif 'طبقه' in widget_title:
+                                    elif widget_title == 'طبقه':
                                         floor = widget_value if widget_value else 'N/A'
                                 
                                 # Extract elevator from GROUP_FEATURE_ROW
