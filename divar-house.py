@@ -909,6 +909,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                 deposit_text = "N/A"
                 rent_text = "N/A"
                 year_built = "N/A"
+                bedroom_count = "N/A"
+                floor = "N/A"
+                elevator = "N/A"
                 
                 # Extract data from API response based on actual structure
                 if detail_data and 'sections' in detail_data:
@@ -925,6 +928,8 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                                     for item_data in items:
                                         if item_data.get('title') == 'ساخت':
                                             year_built = item_data.get('value', 'N/A')
+                                        elif item_data.get('title') == 'اتاق':
+                                            bedroom_count = item_data.get('value', 'N/A')
                                 
                                 # Extract deposit and rent from UNEXPANDABLE_ROW
                                 elif widget_type == 'UNEXPANDABLE_ROW':
@@ -936,6 +941,53 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                                         deposit_text = widget_value if widget_value else 'N/A'
                                     elif 'اجاره' in widget_title:
                                         rent_text = widget_value if widget_value else 'N/A'
+                                    elif 'طبقه' in widget_title:
+                                        floor = widget_value if widget_value else 'N/A'
+                                
+                                # Extract elevator from GROUP_FEATURE_ROW
+                                elif widget_type == 'GROUP_FEATURE_ROW':
+                                    data = widget.get('data', {})
+                                    items = data.get('items', [])
+                                    for feature_item in items:
+                                        feature_title = feature_item.get('title', '')
+                                        available = feature_item.get('available')
+                                        if 'آسانسور' in feature_title:
+                                            if available is False or 'ندارد' in feature_title:
+                                                elevator = "ندارد"
+                                            else:
+                                                elevator = "دارد"
+                
+                # Validate bedroom count against user preference
+                if rooms and bedroom_count != "N/A":
+                    room_mapping = {
+                        "بدون اتاق": 0,
+                        "یک": 1,
+                        "دو": 2,
+                        "سه": 3,
+                        "چهار": 4,
+                        "چهار و بیشتر": 4
+                    }
+                    
+                    # Convert bedroom_count to number
+                    bedroom_num = room_mapping.get(bedroom_count, None)
+                    
+                    # Convert user's room preference
+                    user_rooms = room_mapping.get(rooms, None)
+                    
+                    if bedroom_num is not None and user_rooms is not None:
+                        # Special handling for "چهار و بیشتر"
+                        if rooms == "چهار و بیشتر":
+                            # Accept any listing with 4 or more rooms
+                            if bedroom_num < 4:
+                                item_matches = False
+                                logging.info(f"Filtering out item: bedroom {bedroom_count} < user rooms {rooms}")
+                                continue
+                        else:
+                            # Exact match required
+                            if bedroom_num != user_rooms:
+                                item_matches = False
+                                logging.info(f"Filtering out item: bedroom {bedroom_count} != user rooms {rooms}")
+                                continue
                 
                 # Validate deposit and rent match user's filters
                 if deposit or rent:
@@ -967,6 +1019,9 @@ async def fetch_and_send_items(chat_id, context, send_all=False):
                     f"عنوان: {title}",
                     f"ودیعه: {deposit_text}",
                     f"اجاره: {rent_text}",
+                    f"تعداد اتاق: {bedroom_count}",
+                    f"طبقه: {floor}",
+                    f"آسانسور: {elevator}",
                     f"سال ساخت: {year_built}",
                     f"لینک: {href}"
                 ])
